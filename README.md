@@ -31,6 +31,12 @@ Clone this project with git and run `sudo make install`
 * [PyUSB](https://github.com/walac/pyusb) (please see their instructions on how to install)
 * [PyGObject](https://wiki.gnome.org/action/show/Projects/PyGObject)
 
+Make sure you install PyUSB globally, so the systemd unit can access it. Some distributions install in your home directory by default.
+
+```bash
+sudo -H pip3 install pyusb
+```
+
 Please ignore the pcap directory, [SebiTimeWaster](https://github.com/SebiTimeWaster) added the pcap files he used for reverse engineering just in case someone wants to work with them. They can be opened with [Wireshark](https://en.wikipedia.org/wiki/Wireshark).
 
 ## Usage
