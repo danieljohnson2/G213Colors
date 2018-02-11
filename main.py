@@ -18,7 +18,11 @@ if numArguments > 1:
 else:
     option = ""
 
-
+class DeviceNotFoundError(Exception):
+    """An exception raised when connection to the device fails."""
+    def __init__(self, product):
+        Exception.__init__(self, "USB Device not found: " + product)
+        
 class Window(Gtk.Window):
 
     def btnGetHex(self, btn):
@@ -33,32 +37,29 @@ class Window(Gtk.Window):
         return sb.get_value_as_int()
 
     def sendStatic(self, product):
-        myG = G213Colors
-        myG.connectG(product)
+        myG = self.connectG(product)
         myG.sendColorCommand(self.btnGetHex(self.staticColorButton))
         if product == "G213":
             myG.saveData(myG.colorCommand[product].format(str(format(0, '02x')), self.btnGetHex(self.staticColorButton)))
         myG.disconnectG()
 
     def sendBreathe(self, product):
-        myG = G213Colors
-        myG.connectG(product)
+        myG = self.connectG(product)
         myG.sendBreatheCommand(self.btnGetHex(self.breatheColorButton), self.sbGetValue(self.sbBCycle))
         if product == "G213":
             myG.saveData(myG.breatheCommand[product].format(self.btnGetHex(self.breatheColorButton), str(format(self.sbGetValue(self.sbBCycle), '04x'))))
         myG.disconnectG()
 
     def sendCycle(self, product):
-        myG = G213Colors
-        myG.connectG(product)
+        myG = self.connectG(product)
         myG.sendCycleCommand(self.sbGetValue(self.sbCycle))
         if product == "G213":
             myG.saveData(myG.cycleCommand[product].format(str(format(self.sbGetValue(self.sbCycle), '04x'))))
         myG.disconnectG()
 
+    
     def sendSegments(self, product):
-        myG = G213Colors
-        myG.connectG(product)
+        myG = self.connectG(product)
         data = ""
         for i in range(1, 6):
             print(i)
@@ -70,20 +71,34 @@ class Window(Gtk.Window):
         if product == "G213":
             myG.saveData(data)
 
+    def connectG(self, product):
+        """Creates G213Colors and connects it."""
+        myG = G213Colors
+        
+        try:
+            myG.connectG(product)
+        except ValueError:
+            raise DeviceNotFoundError(product)
+        return myG
+        
     def sendManager(self, product):
         if product == "all":
             for p in PRODUCTS:
                 self.sendManager(p)
         else:
-            self.stackName = self.stack.get_visible_child_name()
-            if self.stackName == "static":
-                self.sendStatic(product)
-            elif self.stackName == "cycle":
-                self.sendCycle(product)
-            elif self.stackName == "breathe":
-                self.sendBreathe(product)
-            elif self.stackName == "segments":
-                self.sendSegments(product)
+            try:
+                self.stackName = self.stack.get_visible_child_name()
+                if self.stackName == "static":
+                    self.sendStatic(product)
+                elif self.stackName == "cycle":
+                    self.sendCycle(product)
+                elif self.stackName == "breathe":
+                    self.sendBreathe(product)
+                elif self.stackName == "segments":
+                    self.sendSegments(product)
+            except DeviceNotFoundError as ex:
+                # continue even if one device is not found
+                print(str(ex))                
 
     def on_button_clicked(self, button, product):
         global ctime
