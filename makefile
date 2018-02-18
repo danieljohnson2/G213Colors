@@ -12,6 +12,7 @@ install :
 	cp icons/G213Colors-128.png /usr/share/icons/hicolor/128x128/apps/g213colors.png
 	cp icons/G213Colors-192.png /usr/share/icons/hicolor/192x192/apps/g213colors.png
 	cp G213Colors.desktop /usr/share/applications/g213colors.desktop
+	cp g213colors-gui.policy /usr/share/polkit-1/actions/g213colors-gui.policy
 	gtk-update-icon-cache -q /usr/share/icons/hicolor/
 	systemctl daemon-reload
 uninstall :
@@ -26,5 +27,6 @@ uninstall :
 	rm /usr/share/icons/hicolor/128x128/apps/g213colors.png
 	rm /usr/share/icons/hicolor/192x192/apps/g213colors.png
 	rm /usr/share/applications/g213colors.desktop
+	rm /usr/share/polkit-1/actions/g213colors-gui.policy
 	gtk-update-icon-cache -q /usr/share/icons/hicolor/
 	systemctl daemon-reload
