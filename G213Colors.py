@@ -48,14 +48,14 @@ wValue         = {"G213": 0x0211,
 wIndex         = 0x0001
 
 # binary commands in hex format
-colorCommand   = {"G213": "11ff0c3a{}01{}0200000000000000000000",
-                  "G203": "11ff0e3c{}01{}0200000000000000000000"} # field; color
-breatheCommand = {"G213": "11ff0c3a0002{}{}006400000000000000",
-                  "G203": "11ff0e3c0003{}{}006400000000000000"}     # color; speed
-cycleCommand   = {"G213": "11ff0c3a0003ffffff0000{}64000000000000",
-                  "G203": "11ff0e3c00020000000000{}64000000000000"}  # speed; brightness
+colorCommand   = {"G213": "11ff0c3a{field:02x}01{color}0200000000000000000000",
+                  "G203": "11ff0e3c{field:02x}01{color}0200000000000000000000"}
+breatheCommand = {"G213": "11ff0c3a0002{color}{speed:04x}006400000000000000",
+                  "G203": "11ff0e3c0003{color}{speed:04x}006400000000000000"}
+cycleCommand   = {"G213": "11ff0c3a0003ffffff0000{speed:04x}64000000000000",
+                  "G203": "11ff0e3c00020000000000{speed:04x}64000000000000"}
 
-confFile       = "/etc/{}Colors.conf" # Product
+confFile       = "/etc/{product}Colors.conf"
 
 class DeviceNotFoundError(Exception):
     """An exception raised when connection to the device fails."""
@@ -135,21 +135,21 @@ def formatColorCommand(product, colorHex, field=0):
     Generates a command to set a device color for a field. field 0 is
     the whole keyboard, 1-6 are zones in it from left to right.
     """
-    return colorCommand[product].format(str(format(field, '02x')), colorHex)
+    return colorCommand[product].format(color=colorHex, field=field)
 
 def formatBreatheCommand(product, colorHex, speed):
     """
     Generates a command set the device to 'breathe' mode, with
     a specific color and breathing speed (in milliseconds).
     """
-    return breatheCommand[product].format(colorHex, str(format(speed, '04x')))
+    return breatheCommand[product].format(color=colorHex, speed=speed)
 
 def formatCycleCommand(product, speed):
     """
     Generates a command to set the device to 'cycle' mode, with
     a cycle speed (in milliseconds).
     """
-    return cycleCommand[product].format(str(format(speed, '04x')))
+    return cycleCommand[product].format(speed=speed)
 
 def formatSegmentsCommand(product, colorHexes):
     """
@@ -181,7 +181,7 @@ def sendSegmentsCommand(product, colorHexes):
 
 def saveConfiguration(product, command):
     """Saves a command for the product in a file for later restoration."""
-    with open(confFile.format(product), "w") as file:
+    with open(confFile.format(product=product), "w") as file:
         file.write(command)
 
 def restoreConfiguration(product=None):
@@ -194,7 +194,7 @@ def restoreConfiguration(product=None):
     
     for target in targets:
         try:
-            with open(confFile.format(target), "r") as file:
+            with open(confFile.format(product=target), "r") as file:
                 command = file.read()
 
             print("Restoring configuration for " + target)
