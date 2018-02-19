@@ -212,7 +212,7 @@ def restoreConfiguration(product=None):
 if len(argv)>1:
     parser = argparse.ArgumentParser()
     parser.add_argument("product", choices=supportedProducts + ["all"])
-    parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments"])
+    parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments", "restore"])
     parser.add_argument("-c", "--color", default=[standardColor], nargs="+")
     parser.add_argument("-s", "--speed", default=3000, type=int)
     parser.add_argument("--save-configuration", action="store_true")
@@ -222,18 +222,20 @@ if len(argv)>1:
     
     for target in targets:
         try:
-            if args.mode == "static":
-                command = formatColorCommand(target, args.color[0])
-            elif args.mode == "cycle":
-                command = formatCycleCommand(target, args.speed)
-            elif args.mode == "breathe":
-                command = formatBreatheCommand(target, args.color[0], args.speed)
-            elif args.mode == "segments":
-                command = formatSegmentsCommand(target, args.color)
-
-            sendCommand(target, command)
-            
-            if args.save_configuration:
-                saveConfiguration(target, command)
+            if args.mode == "restore":
+                restoreConfiguration(target)
+            else:
+                if args.mode == "static":
+                    command = formatColorCommand(target, args.color[0])
+                elif args.mode == "cycle":
+                    command = formatCycleCommand(target, args.speed)
+                elif args.mode == "breathe":
+                    command = formatBreatheCommand(target, args.color[0], args.speed)
+                elif args.mode == "segments":
+                    command = formatSegmentsCommand(target, args.color)
+                sendCommand(target, command)
+                
+                if args.save_configuration:
+                    saveConfiguration(target, command)
         except DeviceNotFoundError as ex:
             print(str(ex))

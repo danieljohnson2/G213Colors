@@ -11,13 +11,6 @@ from gi.repository import Gtk
 
 NAME = "G213 Colors"
 
-numArguments = len(sys.argv)    # number of arguments given
-
-if numArguments > 1:
-    option = str(sys.argv[1]) # option to use
-else:
-    option = ""
-
 class Window(Gtk.Window):
 
     def makeCurrentCommand(self, product):
@@ -133,11 +126,7 @@ class Window(Gtk.Window):
         btnSetAll.connect("clicked", self.on_button_clicked, "all")
         vBoxMain.pack_start(btnSetAll, True, True, 0)
 
-
-if "-t" in option:
-    G213Colors.restoreConfiguration()
-else:
-    win = Window()
-    win.connect("delete-event", Gtk.main_quit)
-    win.show_all()
-    Gtk.main()
+win = Window()
+win.connect("delete-event", Gtk.main_quit)
+win.show_all()
+Gtk.main()
