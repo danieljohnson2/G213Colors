@@ -55,7 +55,6 @@ isDetached     = {"G213": False,  # If kernel driver needs to be reattached
                   "G203": False}
 confFile       = "/etc/G213Colors.conf"
 
-
 def connectG(Name):
     global device, isDetached, productName
     productName = Name
@@ -94,21 +93,29 @@ def sendData(data):
     # decode data to binary and send it
     device.ctrl_transfer(bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(data))
 
-def sendColorCommand(colorHex, field=0):
-    global productName
-
-    sendData(colorCommand[productName].format(str(format(field, '02x')), colorHex))
-
     if productName == "G213":
         receiveData()
+        
+def formatColorCommand(colorHex, field=0):
+    global productName
+    return colorCommand[productName].format(str(format(field, '02x')), colorHex)
+
+def formatBreatheCommand(colorHex, speed):
+    global productName
+    return breatheCommand[productName].format(colorHex, str(format(speed, '04x')))
+
+def formatCycleCommand(speed):
+    global productName
+    return cycleCommand[productName].format(str(format(speed, '04x')))
+
+def sendColorCommand(colorHex, field=0):
+    sendData(formatColorCommand(colorHex, field))
 
 def sendBreatheCommand(colorHex, speed):
-    global productName
-    sendData(breatheCommand[productName].format(colorHex, str(format(speed, '04x'))))
+    sendData(formatBreatheCommand(colorHex, speed))
 
 def sendCycleCommand(speed):
-    global productName
-    sendData(cycleCommand[productName].format(str(format(speed, '04x'))))
+    sendData(formatCycleCommand(speed))
 
 def saveData(data):
     file = open(confFile, "w")

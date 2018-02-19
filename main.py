@@ -38,23 +38,30 @@ class Window(Gtk.Window):
 
     def sendStatic(self, product):
         myG = self.connectG(product)
-        myG.sendColorCommand(self.btnGetHex(self.staticColorButton))
+        colorHex = self.btnGetHex(self.staticColorButton)
+        command = myG.formatColorCommand(colorHex)
+        myG.sendData(command)
         if product == "G213":
-            myG.saveData(myG.colorCommand[product].format(str(format(0, '02x')), self.btnGetHex(self.staticColorButton)))
+            myG.saveData(command)
         myG.disconnectG()
 
     def sendBreathe(self, product):
         myG = self.connectG(product)
-        myG.sendBreatheCommand(self.btnGetHex(self.breatheColorButton), self.sbGetValue(self.sbBCycle))
+        colorHex = self.btnGetHex(self.breatheColorButton)
+        speed = self.sbGetValue(self.sbBCycle)
+        command = myG.formatBreatheCommand(colorHex, speed)
+        myG.sendData(command)
         if product == "G213":
-            myG.saveData(myG.breatheCommand[product].format(self.btnGetHex(self.breatheColorButton), str(format(self.sbGetValue(self.sbBCycle), '04x'))))
+            myG.saveData(command)
         myG.disconnectG()
 
     def sendCycle(self, product):
         myG = self.connectG(product)
-        myG.sendCycleCommand(self.sbGetValue(self.sbCycle))
+        speed = self.sbGetValue(self.sbCycle)
+        command = myG.formatCycleCommand(speed)
+        myG.sendData(command)
         if product == "G213":
-            myG.saveData(myG.cycleCommand[product].format(str(format(self.sbGetValue(self.sbCycle), '04x'))))
+            myG.saveData(command)
         myG.disconnectG()
 
     
@@ -62,10 +69,12 @@ class Window(Gtk.Window):
         myG = self.connectG(product)
         data = ""
         for i in range(1, 6):
+            colorHex = self.btnGetHex(self.segmentColorBtns[i-1])
             print(i)
-            print(self.btnGetHex(self.segmentColorBtns[i-1]))
-            myG.sendColorCommand(self.btnGetHex(self.segmentColorBtns[i -1]), i)
-            data += myG.colorCommand[product].format(str(format(i, '02x')), self.btnGetHex(self.segmentColorBtns[i -1])) + "\n"
+            print(colorHex)
+            command = myG.formatColorCommand(colorHex, i)
+            myG.sendData(command)
+            data += command + "\n"
             sleep(0.01)
         myG.disconnectG()
         if product == "G213":
@@ -187,7 +196,6 @@ if "-t" in option:
             command = command.strip()
             if command and "," not in command:
                 myG.sendData(command)
-                myG.receiveData()
                 sleep(0.01)
 
             if "," in command:
