@@ -23,59 +23,58 @@ def sendG(product, command):
         
 class Window(Gtk.Window):
 
-    def btnGetHex(self, btn):
-        color = btn.get_rgba()
-        red = int(color.red * 255)
-        green = int(color.green * 255)
-        blue = int(color.blue * 255)
-        hexColor = "%02x%02x%02x" % (red, green, blue)
-        return hexColor
+    def makeCurrentCommand(self, product):
+        """
+        Generates the command for whatever the state of the UI is; we
+        generate the commmands for the indicated product.
+        """
+        def makeStatic():
+            colorHex = btnGetHex(self.staticColorButton)
+            return G213Colors.formatColorCommand(product, colorHex)
 
-    def sbGetValue(self, sb):
-        return sb.get_value_as_int()
+        def makeBreathe():
+            colorHex = btnGetHex(self.breatheColorButton)
+            speed = sbGetValue(self.sbBCycle)
+            return G213Colors.formatBreatheCommand(product, colorHex, speed)
 
-    def sendStatic(self, product):
-        colorHex = self.btnGetHex(self.staticColorButton)
-        command = G213Colors.formatColorCommand(product, colorHex)
-        sendG(product, command)
+        def makeCycle():
+            speed = sbGetValue(self.sbCycle)
+            return G213Colors.formatCycleCommand(product, speed)
+        
+        def makeSegments():
+            colorHexes = (btnGetHex(b) for b in self.segmentColorBtns)
+            return G213Colors.formatSegmentsCommand(product, colorHexes)
+        
+        def btnGetHex(btn):
+            color = btn.get_rgba()
+            red = int(color.red * 255)
+            green = int(color.green * 255)
+            blue = int(color.blue * 255)
+            hexColor = "%02x%02x%02x" % (red, green, blue)
+            return hexColor
 
-    def sendBreathe(self, product):
-        colorHex = self.btnGetHex(self.breatheColorButton)
-        speed = self.sbGetValue(self.sbBCycle)
-        command = G213Colors.formatBreatheCommand(product, colorHex, speed)
-        sendG(product, command)
+        def sbGetValue(sb):
+            return sb.get_value_as_int()
 
-    def sendCycle(self, product):
-        speed = self.sbGetValue(self.sbCycle)
-        command = G213Colors.formatCycleCommand(product, speed)
-        sendG(product, command)
-    
-    def sendSegments(self, product):
-        colorHexes = (self.btnGetHex(self.segmentColorBtns[i-1]) for i in range(1,6))
-        command = G213Colors.formatSegmentsCommand(product, colorHexes)
-        sendG(product, command)
-    
-    def sendManager(self, product):
-        if product == "all":
-            for p in G213Colors.supportedProducts:
-                self.sendManager(p)
-        else:
-            try:
-                self.stackName = self.stack.get_visible_child_name()
-                if self.stackName == "static":
-                    self.sendStatic(product)
-                elif self.stackName == "cycle":
-                    self.sendCycle(product)
-                elif self.stackName == "breathe":
-                    self.sendBreathe(product)
-                elif self.stackName == "segments":
-                    self.sendSegments(product)
-            except G213Colors.DeviceNotFoundError as ex:
-                # continue even if one device is not found
-                print(str(ex))                
+        makers = { "static" : makeStatic,
+                   "cycle" : makeCycle,
+                   "breathe" : makeBreathe,
+                   "segments" : makeSegments }
+        
+        stackName = self.stack.get_visible_child_name()
+        return makers[stackName]()
+
 
     def on_button_clicked(self, button, product):
-        self.sendManager(product)
+        targets = [product] if product else G213Colors.supportedProducts
+
+        for target in targets:
+            try:
+                command = self.makeCurrentCommand(target)
+                G213Colors.sendCommand(target, command)
+            except G213Colors.DeviceNotFoundError as ex:
+                # continue even if one device is not found
+                print(str(ex))    
 
     def __init__(self):
 
@@ -140,7 +139,7 @@ class Window(Gtk.Window):
 
         ###SET ALL BUTTON
         btnSetAll = Gtk.Button.new_with_label("Set all")
-        btnSetAll.connect("clicked", self.on_button_clicked, "all")
+        btnSetAll.connect("clicked", self.on_button_clicked, None)
         vBoxMain.pack_start(btnSetAll, True, True, 0)
 
 
