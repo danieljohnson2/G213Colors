@@ -3,6 +3,7 @@
 from __future__ import print_function
 import G213Colors
 from time import sleep
+import subprocess
 import gi
 import sys
 gi.require_version('Gtk', '3.0')
@@ -24,22 +25,22 @@ class Window(Gtk.Window):
         Generates the command for whatever the state of the UI is; we
         generate the commmands for the indicated product.
         """
-        def makeStatic():
+        def makeStaticArgs():
             colorHex = btnGetHex(self.staticColorButton)
-            return G213Colors.formatColorCommand(product, colorHex)
+            return ["-c", colorHex]
 
-        def makeBreathe():
+        def makeBreatheArgs():
             colorHex = btnGetHex(self.breatheColorButton)
             speed = sbGetValue(self.sbBCycle)
-            return G213Colors.formatBreatheCommand(product, colorHex, speed)
-
-        def makeCycle():
+            return ["-c", colorHex, "-s", str(speed)]
+            
+        def makeCycleArgs():
             speed = sbGetValue(self.sbCycle)
-            return G213Colors.formatCycleCommand(product, speed)
+            return ["-s", str(speed)]
         
-        def makeSegments():
-            colorHexes = (btnGetHex(b) for b in self.segmentColorBtns)
-            return G213Colors.formatSegmentsCommand(product, colorHexes)
+        def makeSegmentsArgs():
+            colorHexes = [btnGetHex(b) for b in self.segmentColorBtns]
+            return ["-c"] + colorHexes
         
         def btnGetHex(btn):
             color = btn.get_rgba()
@@ -52,26 +53,19 @@ class Window(Gtk.Window):
         def sbGetValue(sb):
             return sb.get_value_as_int()
 
-        makers = { "static" : makeStatic,
-                   "cycle" : makeCycle,
-                   "breathe" : makeBreathe,
-                   "segments" : makeSegments }
+        makers = { "static" : makeStaticArgs,
+                   "cycle" : makeCycleArgs,
+                   "breathe" : makeBreatheArgs,
+                   "segments" : makeSegmentsArgs }
         
-        stackName = self.stack.get_visible_child_name()
-        return makers[stackName]()
+        mode = self.stack.get_visible_child_name()
+        args = makers[mode]()
+        return ["pkexec", G213Colors.__file__, product, mode, "--save-configuration"] + args
 
 
     def on_button_clicked(self, button, product):
-        targets = [product] if product else G213Colors.supportedProducts
-
-        for target in targets:
-            try:
-                command = self.makeCurrentCommand(target)
-                G213Colors.sendCommand(target, command)
-                G213Colors.saveConfiguration(target, command)
-            except G213Colors.DeviceNotFoundError as ex:
-                # continue even if one device is not found
-                print(str(ex))    
+        command = self.makeCurrentCommand(product)
+        subprocess.run(command) # fails if device missing, but we ignore!
 
     def __init__(self):
 
@@ -136,7 +130,7 @@ class Window(Gtk.Window):
 
         ###SET ALL BUTTON
         btnSetAll = Gtk.Button.new_with_label("Set all")
-        btnSetAll.connect("clicked", self.on_button_clicked, None)
+        btnSetAll.connect("clicked", self.on_button_clicked, "all")
         vBoxMain.pack_start(btnSetAll, True, True, 0)
 
 

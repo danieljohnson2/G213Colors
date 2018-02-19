@@ -4,15 +4,14 @@
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
   <icon_name>g213colors</icon_name>
-  <action id="G213Colors-gui">
-    <description>Run G213Colors</description>
-    <message>Authentication is required to run G213Colors</message>
+  <action id="G213Colors.py">
+    <description>Update G213 or G203 Device Colors</description>
+    <message>Authentication is required to update G213 or G203 device colors.</message>
     <defaults>
       <allow_any>no</allow_any>
       <allow_inactive>no</allow_inactive>
-      <allow_active>auth_admin</allow_active>
+      <allow_active>auth_admin_keep</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/g213colors-gui</annotate>
-    <annotate key="org.freedesktop.policykit.exec.allow_gui">TRUE</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/G213Colors.py</annotate>
   </action>
 </policyconfig>
