@@ -52,11 +52,18 @@ sudo python main.py
 ```
 G213Colors needs to be run as root as long as your user doesn't have access privileges for that USB device ([How to do this](http://stackoverflow.com/a/32022908/2948666), please use "046d" as idVendor and "c336" as idProduct).
 
+g213colors-gui does not to run as root; it will prompt for an elevation password when it needs to.
+
 ### Restoring previous state
-After rebooting your pc you can restore the pre-reboot state by running the app with parameter -t
+After rebooting your pc you can restore the pre-reboot state by running the script from the command line.
 
 ```Bash
-sudo g213colors-gui -t
+sudo G213Colors.py all restore
+```
+
+There are other options from the command line; try this to get some basics:
+```Bash
+sudo G213Colors.py -h
 ```
 
 You can also do this automatically at reboot by enabling the systemd service.

@@ -211,11 +211,16 @@ def restoreConfiguration(product=None):
 # Support use as command line!
 if len(argv)>1:
     parser = argparse.ArgumentParser()
-    parser.add_argument("product", choices=supportedProducts + ["all"])
-    parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments", "restore"])
-    parser.add_argument("-c", "--color", default=[standardColor], nargs="+")
-    parser.add_argument("-s", "--speed", default=3000, type=int)
-    parser.add_argument("--save-configuration", action="store_true")
+    parser.add_argument("product", choices=supportedProducts + ["all"],
+        help="The product name whose colors are to be configured.")
+    parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments", "restore"],
+        help="The mode to put the device it, or restore to reload the most recent configuration.")
+    parser.add_argument("-c", "--color", default=[standardColor], nargs="+",
+        help="The color (in hex RRGGBB) to display on the device. Up to 6 colors may be used for segments mode.")
+    parser.add_argument("-s", "--speed", default=3000, type=int,
+        help="The speed (in milliseconds) to cycle or breathe at.")
+    parser.add_argument("--save-configuration", action="store_true",
+        help="Save the new configuration back to the configuration file, for use by the restore mode.")
     
     args = parser.parse_args()
     targets = [args.product] if args.product != "all" else supportedProducts
@@ -233,6 +238,7 @@ if len(argv)>1:
                     command = formatBreatheCommand(target, args.color[0], args.speed)
                 elif args.mode == "segments":
                     command = formatSegmentsCommand(target, args.color)
+                    
                 sendCommand(target, command)
                 
                 if args.save_configuration:
