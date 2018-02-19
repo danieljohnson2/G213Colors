@@ -57,8 +57,27 @@ class DeviceNotFoundError(Exception):
     def __init__(self, product):
         Exception.__init__(self, "USB Device not found: " + product)
 
-def sendCommand(product, data):
+def sendCommand(product, command):
+    """
+    This sends commands to a G-device; you specify the device
+    (one of G213 and G203, for the keyboard or mouse) and a command
+    block to send. This may contain multiple commands, separated by
+    newlines. Each command is a byte sequence encoded as binhex;
+    the format functions of this module provide suitable commands
+    to use here.
+    
+    This function takes care of detaching any kernel driver and reattaching
+    it afterwards.
+    
+    This can raise DeviceNotFoundError if you don't have a suitable device.
+    """
+    
     def connectG():
+        """
+        Returns device object and a flag indicating if a kernel driver
+        should be reconnected; pass all this to disconnectG() to restore
+        normal function.
+        """
         print("Connecting to " + product)
         device = usb.core.find(idVendor=idVendor, idProduct=idProduct[product])
         
@@ -75,12 +94,13 @@ def sendCommand(product, data):
 
     def transmit(device):
         """
-        Transmits commands to the device that is connected; you can send multiple commands
-        in sequence by passing new-line separated commands in 'data'.
+        Transmits commands to the device that is connected; it sends a line
+        at a time, and reads after each command so the device is ready for
+        the next command.
         """
         print("Sending bmRequestType, bmRequest, wValue[product], wIndex, command")
         
-        for cmd in data.splitlines():
+        for cmd in command.splitlines():
             wv = wValue[product]
             unhexed = binascii.unhexlify(cmd)
             print(bmRequestType, bmRequest, wv, wIndex, unhexed)
@@ -106,15 +126,34 @@ def sendCommand(product, data):
     finally: disconnectG(device, shouldReattach)
 
 def formatColorCommand(product, colorHex, field=0):
+    """
+    Generates a command to set a device color for a field. field 0 is
+    the whole keyboard, 1-6 are zones in it from left to right.
+    """
     return colorCommand[product].format(str(format(field, '02x')), colorHex)
 
 def formatBreatheCommand(product, colorHex, speed):
+    """
+    Generates a command set the device to 'breathe' mode, with
+    a specific color and breathing speed (in milliseconds).
+    """
     return breatheCommand[product].format(colorHex, str(format(speed, '04x')))
 
 def formatCycleCommand(product, speed):
+    """
+    Generates a command to set the device to 'cycle' mode, with
+    a cycle speed (in milliseconds).
+    """
     return cycleCommand[product].format(str(format(speed, '04x')))
 
 def formatSegmentsCommand(product, colorHexes):
+    """
+    Generates a command to set the device to the device color for
+    each zone; you can have up to 6.
+    """
+    if len(colorHexes) > 6:
+        raise ValueError("Too many colors- only 6 are allowed.")
+        
     buffer = ""
     for i, colorHex in enumerate(colorHexes):
         if i > 0: buffer += "\n"
@@ -122,22 +161,31 @@ def formatSegmentsCommand(product, colorHexes):
     return buffer
     
 def sendColorCommand(product, colorHex):
+    """Sets the device color in one step."""
     sendCommand(formatColorCommand(product, colorHex))
 
 def sendBreatheCommand(product, colorHex, speed):
+    """Sets the device to 'breathe' in one step."""
     sendCommand(formatBreatheCommand(product, colorHex, speed))
 
 def sendCycleCommand(product, speed):
+    """Sets the device to 'cycle' in one step."""
     sendCommand(formatCycleCommand(product, speed))
 
 def sendSegmentsCommand(product, colorHexes):
+    """Sets the device colors by zone in one step."""
     sendCommand(formatSegmentsCommand(product, colorHexes))
 
 def saveConfiguration(product, command):
+    """Saves a command for the product in a file for later restoration."""
     with open(confFile.format(product), "w") as file:
         file.write(command)
 
 def restoreConfiguration(product):
+    """
+    Reads the saved command for the product and re-sends it; if
+    the configuration file is missing this does nothing.
+    """
     try:
         with open(confFile.format(product), "r") as file:
             command = file.read()
