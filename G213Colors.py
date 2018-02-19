@@ -50,10 +50,6 @@ breatheCommand = {"G213": "11ff0c3a0002{}{}006400000000000000",
 cycleCommand   = {"G213": "11ff0c3a0003ffffff0000{}64000000000000",
                   "G203": "11ff0e3c00020000000000{}64000000000000"}  # speed; brightness
 
-device         = ""               # device resource
-productName    = ""               # e.g. G213, G203
-isDetached     = {"G213": False,  # If kernel driver needs to be reattached
-                  "G203": False}
 confFile       = "/etc/{}Colors.conf" # Product
 
 class DeviceNotFoundError(Exception):
@@ -62,56 +58,52 @@ class DeviceNotFoundError(Exception):
         Exception.__init__(self, "USB Device not found: " + product)
 
 def sendCommand(product, data):
-    global device, isDetached, productName
-    
     def connectG():
-        global device, isDetached, productName
-        productName = product
-        print(productName)
-        # find G product
-        device = usb.core.find(idVendor=idVendor, idProduct=idProduct[productName])
-        # if not found exit
-        #print(device.manufacturer)
+        print("Connecting to " + product)
+        device = usb.core.find(idVendor=idVendor, idProduct=idProduct[product])
+        
         if device is None:
             raise DeviceNotFoundError(product)
-        # if a kernel driver is attached to the interface detach it, otherwise no data can be send
-        if device.is_kernel_driver_active(wIndex):
+            
+        # if a kernel driver is attached to the interface detach it,
+        # otherwise no data can be sent
+        shouldReattach = device.is_kernel_driver_active(wIndex)
+        if shouldReattach:
+            print("Detaching kernel driver")
             device.detach_kernel_driver(wIndex)
-            isDetached[productName] = True
-            print("Connected " + productName)
+        return device, shouldReattach
 
-    def transmit():
-        global device, isDetached, productName
+    def transmit(device):
         """
         Transmits commands to the device that is connected; you can send multiple commands
         in sequence by passing new-line separated commands in 'data'.
         """
-        print("Send data to " + productName)
-        print("bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(data)")
+        print("Sending bmRequestType, bmRequest, wValue[product], wIndex, command")
         
-        for i, cmd in enumerate(data.splitlines()):
-            print(bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(cmd))
-            # free device resource to uest, wValue[productName], wIndex, binascii.unhexlify(cmd))
-            # decode data to binary and send it
-            device.ctrl_transfer(bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(cmd))
+        for cmd in data.splitlines():
+            wv = wValue[product]
+            unhexed = binascii.unhexlify(cmd)
+            print(bmRequestType, bmRequest, wv, wIndex, unhexed)
+            device.ctrl_transfer(bmRequestType, bmRequest, wv, wIndex, unhexed)
+            
             sleep(0.01) # not sure why we need this; looks like fake synchronization
 
             # a second command is not accepted unless we read between commands
-            if productName == "G213":
+            if product == "G213":
                 device.read(0x82, 64)
 
-    def disconnectG():
-        global device, isDetached, productName
+    def disconnectG(device, shouldReattach):
+        print("Disconnecting")
         # free device resource to be able to reattach kernel driver
         usb.util.dispose_resources(device)
         # reattach kernel driver, otherwise special key will not work
-        if isDetached[productName]:
+        if shouldReattach:
+            print("Reattaching kernel driver");
             device.attach_kernel_driver(wIndex)
-            print("Disconnected " + productName)
     
-    connectG()
-    try: transmit()
-    finally: disconnectG()
+    device, shouldReattach = connectG()
+    try: transmit(device)
+    finally: disconnectG(device, shouldReattach)
 
 def formatColorCommand(product, colorHex, field=0):
     return colorCommand[product].format(str(format(field, '02x')), colorHex)
