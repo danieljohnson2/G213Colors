@@ -141,7 +141,16 @@ def sendCycleCommand(product, speed):
 def sendSegmentsCommand(product, colorHexes):
     sendCommand(formatSegmentsCommand(product, colorHexes))
 
-def saveData(data):
+def saveConfiguration(command):
     file = open(confFile, "w")
-    file.write(data)
+    file.write(command)
     file.close()
+    
+def restoreConfiguration(product="G213"):
+    with open(confFile, "r") as file:
+        command = file.read()
+
+    if "," in command:
+        raise ValueError("\",\" is not supported in the config file. If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
+
+    sendCommand(product, command)

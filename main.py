@@ -22,7 +22,7 @@ def sendG(product, command):
     G213Colors.sendCommand(product, command)
 
     if product == "G213":
-        G213Colors.saveData(command)
+        G213Colors.saveConfiguration(command)
         
 class Window(Gtk.Window):
 
@@ -154,21 +154,9 @@ class Window(Gtk.Window):
 
 
 if "-t" in option:
-    myG = G213Colors
-
-    with open(myG.confFile, "r") as file:
-        command = file.read()
-
-    if "," in command:
-        print("\",\" is not supported in the config file.")
-        print("If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
-    else:
-        myG.connectG("G213")
-        myG.sendData(command)
-        myG.disconnectG()
-        sys.exit(0)
-
-win = Window()
-win.connect("delete-event", Gtk.main_quit)
-win.show_all()
-Gtk.main()
+    G213Colors.restoreConfiguration()
+else:
+    win = Window()
+    win.connect("delete-event", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
