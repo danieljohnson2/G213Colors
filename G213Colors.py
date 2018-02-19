@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 '''
   *  The MIT License (MIT)
   *
@@ -25,9 +26,12 @@
 
 from __future__ import print_function
 from time import sleep
+from sys import argv
 import usb.core
 import usb.util
 import binascii
+import argparse
+
 
 supportedProducts = ["G213", "G203"] # The products this module supports
 
@@ -161,19 +165,19 @@ def formatSegmentsCommand(product, colorHexes):
     
 def sendColorCommand(product, colorHex):
     """Sets the device color in one step."""
-    sendCommand(formatColorCommand(product, colorHex))
+    sendCommand(product, formatColorCommand(product, colorHex))
 
 def sendBreatheCommand(product, colorHex, speed):
     """Sets the device to 'breathe' in one step."""
-    sendCommand(formatBreatheCommand(product, colorHex, speed))
+    sendCommand(product, formatBreatheCommand(product, colorHex, speed))
 
 def sendCycleCommand(product, speed):
     """Sets the device to 'cycle' in one step."""
-    sendCommand(formatCycleCommand(product, speed))
+    sendCommand(product, formatCycleCommand(product, speed))
 
 def sendSegmentsCommand(product, colorHexes):
     """Sets the device colors by zone in one step."""
-    sendCommand(formatSegmentsCommand(product, colorHexes))
+    sendCommand(product, formatSegmentsCommand(product, colorHexes))
 
 def saveConfiguration(product, command):
     """Saves a command for the product in a file for later restoration."""
@@ -204,3 +208,21 @@ def restoreConfiguration(product=None):
         except DeviceNotFoundError:
             pass # just skip missing devices
 
+
+# Support use as command line!
+if len(argv)>1:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("product", choices=supportedProducts)
+    parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments"])
+    parser.add_argument("-c", "--color", default=[standardColor], nargs="+")
+    parser.add_argument("-s", "--speed", default=3000, type=int)
+    
+    args = parser.parse_args()
+    if args.mode == "static":
+        sendColorCommand(args.product, args.color[0])
+    elif args.mode == "cycle":
+        sendCycleCommand(args.product, args.speed)
+    elif args.mode == "breathe":
+        sendBreatheCommand(args.product, args.color[0], args.speed)
+    elif args.mode == "segments":
+        sendSegmentsCommand(args.product, args.color)
