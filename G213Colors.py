@@ -24,6 +24,7 @@
 
 
 from __future__ import print_function
+from time import sleep
 import usb.core
 import usb.util
 import binascii
@@ -81,20 +82,25 @@ def disconnectG():
         device.attach_kernel_driver(wIndex)
         print("Disconnected " + productName)
 
-def receiveData():
-    device.read(0x82, 64)
-
 def sendData(data):
+    """
+    Transmits commands to the device that is connected; you can send multiple commands
+    in sequence by passing new-line separated commands in 'data'.
+    """
     global productName
     print("Send data to " + productName)
     print("bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(data)")
-    print(bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(data))
-    # free device resource to uest, wValue[productName], wIndex, binascii.unhexlify(data))
-    # decode data to binary and send it
-    device.ctrl_transfer(bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(data))
+    
+    for i, cmd in enumerate(data.splitlines()):
+        print(bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(cmd))
+        # free device resource to uest, wValue[productName], wIndex, binascii.unhexlify(cmd))
+        # decode data to binary and send it
+        device.ctrl_transfer(bmRequestType, bmRequest, wValue[productName], wIndex, binascii.unhexlify(cmd))
+        sleep(0.01) # not sure why we need this; looks like fake synchronization
 
-    if productName == "G213":
-        receiveData()
+        # a second command is not accepted unless we read between commands
+        if productName == "G213":
+            device.read(0x82, 64)
         
 def formatColorCommand(colorHex, field=0):
     global productName
@@ -108,6 +114,13 @@ def formatCycleCommand(speed):
     global productName
     return cycleCommand[productName].format(str(format(speed, '04x')))
 
+def formatSegmentsCommand(colorHexes):
+    buffer = ""
+    for i, colorHex in enumerate(colorHexes):
+        if i > 0: buffer += "\n"
+        buffer += formatColorCommand(colorHex, int(i+1))
+    return buffer
+    
 def sendColorCommand(colorHex, field=0):
     sendData(formatColorCommand(colorHex, field))
 

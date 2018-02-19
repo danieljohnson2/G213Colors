@@ -67,18 +67,12 @@ class Window(Gtk.Window):
     
     def sendSegments(self, product):
         myG = self.connectG(product)
-        data = ""
-        for i in range(1, 6):
-            colorHex = self.btnGetHex(self.segmentColorBtns[i-1])
-            print(i)
-            print(colorHex)
-            command = myG.formatColorCommand(colorHex, i)
-            myG.sendData(command)
-            data += command + "\n"
-            sleep(0.01)
+        colorHexes = (self.btnGetHex(self.segmentColorBtns[i-1]) for i in range(1,6))
+        command = myG.formatSegmentsCommand(colorHexes)
+        myG.sendData(command)
         myG.disconnectG()
         if product == "G213":
-            myG.saveData(data)
+            myG.saveData(command)
 
     def connectG(self, product):
         """Creates G213Colors and connects it."""
