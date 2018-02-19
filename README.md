@@ -94,3 +94,8 @@ Changelog v0.4:
 
 Changelog v0.5:
 * Finally fixed incontrollable segments bug (with the help of [Oncecreated](https://github.com/oncecreated))
+
+Changelog v0.6:
+* Ubuntu 17.10 Compatibility (by [danieljohnson2](https://github.com/danieljohnson2))
+    * Use pkexec instead of gksudo, so GUI itself need not run as root
+    * Fixed systemd service to explicitly specify where PyUSB is
