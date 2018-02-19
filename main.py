@@ -17,10 +17,6 @@ if numArguments > 1:
 else:
     option = ""
 
-def sendG(product, command):
-    G213Colors.sendCommand(product, command)
-    G213Colors.saveConfiguration(product, command)
-        
 class Window(Gtk.Window):
 
     def makeCurrentCommand(self, product):
@@ -72,6 +68,7 @@ class Window(Gtk.Window):
             try:
                 command = self.makeCurrentCommand(target)
                 G213Colors.sendCommand(target, command)
+                G213Colors.saveConfiguration(target, command)
             except G213Colors.DeviceNotFoundError as ex:
                 # continue even if one device is not found
                 print(str(ex))    
