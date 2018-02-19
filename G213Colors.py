@@ -102,33 +102,33 @@ def sendData(data):
         if productName == "G213":
             device.read(0x82, 64)
         
-def formatColorCommand(colorHex, field=0):
-    global productName
-    return colorCommand[productName].format(str(format(field, '02x')), colorHex)
+def formatColorCommand(product, colorHex, field=0):
+    return colorCommand[product].format(str(format(field, '02x')), colorHex)
 
-def formatBreatheCommand(colorHex, speed):
-    global productName
-    return breatheCommand[productName].format(colorHex, str(format(speed, '04x')))
+def formatBreatheCommand(product, colorHex, speed):
+    return breatheCommand[product].format(colorHex, str(format(speed, '04x')))
 
-def formatCycleCommand(speed):
-    global productName
-    return cycleCommand[productName].format(str(format(speed, '04x')))
+def formatCycleCommand(product, speed):
+    return cycleCommand[product].format(str(format(speed, '04x')))
 
-def formatSegmentsCommand(colorHexes):
+def formatSegmentsCommand(product, colorHexes):
     buffer = ""
     for i, colorHex in enumerate(colorHexes):
         if i > 0: buffer += "\n"
-        buffer += formatColorCommand(colorHex, int(i+1))
+        buffer += formatColorCommand(product, colorHex, int(i+1))
     return buffer
     
 def sendColorCommand(colorHex, field=0):
-    sendData(formatColorCommand(colorHex, field))
+    global productName
+    sendData(formatColorCommand(productName, colorHex, field))
 
 def sendBreatheCommand(colorHex, speed):
-    sendData(formatBreatheCommand(colorHex, speed))
+    global productName
+    sendData(formatBreatheCommand(productName, colorHex, speed))
 
 def sendCycleCommand(speed):
-    sendData(formatCycleCommand(speed))
+    global productName
+    sendData(formatCycleCommand(productName, speed))
 
 def saveData(data):
     file = open(confFile, "w")
