@@ -29,6 +29,7 @@ import usb.core
 import usb.util
 import binascii
 
+supportedProducts = ["G213", "G203"] # The products this module supports
 
 standardColor  = 'ffb4aa'         # Standard color, i found this color to produce a white color on my G213
 idVendor       = 0x046d           # The id of the Logitech company
@@ -181,21 +182,27 @@ def saveConfiguration(product, command):
     with open(confFile.format(product), "w") as file:
         file.write(command)
 
-def restoreConfiguration(product):
+def restoreConfiguration(product=None):
     """
     Reads the saved command for the product and re-sends it; if
-    the configuration file is missing this does nothing.
+    the configuration file is missing this does nothing. By default
+    this will restore all products whose config files can be found.
     """
-    try:
-        with open(confFile.format(product), "r") as file:
-            command = file.read()
+    targets = [product] if product else supportedProducts
+    
+    for target in targets:
+        try:
+            with open(confFile.format(target), "r") as file:
+                command = file.read()
 
-        if "," in command:
-            raise ValueError("\",\" is not supported in the config file. If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
+            print("Restoring configuration for " + target)
 
-        sendCommand(product, command)
-    except FileNotFoundError:
-        pass # treat missing conf file as if empty
-    except DeviceNotFoundError:
-        pass # just skip missing devices
+            if "," in command:
+                raise ValueError("\",\" is not supported in the config file. If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
+
+            sendCommand(target, command)
+        except FileNotFoundError:
+            pass # treat missing conf file as if empty
+        except DeviceNotFoundError:
+            pass # just skip missing devices
 

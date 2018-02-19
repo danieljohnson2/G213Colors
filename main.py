@@ -9,7 +9,6 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 NAME = "G213 Colors"
-PRODUCTS = ["G213", "G203"]
 
 numArguments = len(sys.argv)    # number of arguments given
 
@@ -58,7 +57,7 @@ class Window(Gtk.Window):
     
     def sendManager(self, product):
         if product == "all":
-            for p in PRODUCTS:
+            for p in G213Colors.supportedProducts:
                 self.sendManager(p)
         else:
             try:
@@ -139,7 +138,7 @@ class Window(Gtk.Window):
         ###SET BUTTONS
         hBoxSetButtons = Gtk.Box(spacing=5)
         self.setColorBtns = []
-        for p in PRODUCTS:
+        for p in G213Colors.supportedProducts:
             btn = Gtk.Button.new_with_label("Set" + p)
             hBoxSetButtons.pack_start(btn, True, True, 0)
             btn.connect("clicked", self.on_button_clicked, p)
@@ -152,7 +151,7 @@ class Window(Gtk.Window):
 
 
 if "-t" in option:
-    for product in PRODUCTS: G213Colors.restoreConfiguration(product)
+    G213Colors.restoreConfiguration()
 else:
     win = Window()
     win.connect("delete-event", Gtk.main_quit)
