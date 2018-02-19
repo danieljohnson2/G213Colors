@@ -75,12 +75,6 @@ class Window(Gtk.Window):
                 print(str(ex))                
 
     def on_button_clicked(self, button, product):
-        global ctime
-        global btime
-        ctime = self.sbCycle.get_value_as_int()
-        btime = self.sbBCycle.get_value_as_int()
-        print(ctime)
-        print(self.stack.get_visible_child_name())
         self.sendManager(product)
 
     def __init__(self):

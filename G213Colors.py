@@ -152,11 +152,9 @@ def formatSegmentsCommand(product, colorHexes):
     Generates a command to set the device to the device color for
     each zone; you can have up to 6.
     """
-    if len(colorHexes) > 6:
-        raise ValueError("Too many colors- only 6 are allowed.")
-        
     buffer = ""
     for i, colorHex in enumerate(colorHexes):
+        if i > 5: raise ValueError("Too many colors- only 6 are allowed.")
         if i > 0: buffer += "\n"
         buffer += formatColorCommand(product, colorHex, int(i+1))
     return buffer
