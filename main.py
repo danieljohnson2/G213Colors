@@ -18,27 +18,11 @@ if numArguments > 1:
 else:
     option = ""
 
-class DeviceNotFoundError(Exception):
-    """An exception raised when connection to the device fails."""
-    def __init__(self, product):
-        Exception.__init__(self, "USB Device not found: " + product)
-    
 def sendG(product, command):
-    """Creates G213Colors and connects it."""
-    myG = G213Colors
-    
-    try:
-        myG.connectG(product)
-    except ValueError:
-        raise DeviceNotFoundError(product)
-
-    try:
-        myG.sendData(command)
-    finally:
-        myG.disconnectG()
+    G213Colors.sendCommand(product, command)
 
     if product == "G213":
-        myG.saveData(command)
+        G213Colors.saveData(command)
         
 class Window(Gtk.Window):
 
@@ -89,7 +73,7 @@ class Window(Gtk.Window):
                     self.sendBreathe(product)
                 elif self.stackName == "segments":
                     self.sendSegments(product)
-            except DeviceNotFoundError as ex:
+            except G213Colors.DeviceNotFoundError as ex:
                 # continue even if one device is not found
                 print(str(ex))                
 
