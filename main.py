@@ -20,9 +20,7 @@ else:
 
 def sendG(product, command):
     G213Colors.sendCommand(product, command)
-
-    if product == "G213":
-        G213Colors.saveConfiguration(command)
+    G213Colors.saveConfiguration(product, command)
         
 class Window(Gtk.Window):
 
@@ -154,7 +152,7 @@ class Window(Gtk.Window):
 
 
 if "-t" in option:
-    G213Colors.restoreConfiguration()
+    for product in PRODUCTS: G213Colors.restoreConfiguration(product)
 else:
     win = Window()
     win.connect("delete-event", Gtk.main_quit)

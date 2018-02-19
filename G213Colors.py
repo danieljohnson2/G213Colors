@@ -54,7 +54,7 @@ device         = ""               # device resource
 productName    = ""               # e.g. G213, G203
 isDetached     = {"G213": False,  # If kernel driver needs to be reattached
                   "G203": False}
-confFile       = "/etc/G213Colors.conf"
+confFile       = "/etc/{}Colors.conf" # Product
 
 class DeviceNotFoundError(Exception):
     """An exception raised when connection to the device fails."""
@@ -141,16 +141,21 @@ def sendCycleCommand(product, speed):
 def sendSegmentsCommand(product, colorHexes):
     sendCommand(formatSegmentsCommand(product, colorHexes))
 
-def saveConfiguration(command):
-    file = open(confFile, "w")
-    file.write(command)
-    file.close()
-    
-def restoreConfiguration(product="G213"):
-    with open(confFile, "r") as file:
-        command = file.read()
+def saveConfiguration(product, command):
+    with open(confFile.format(product), "w") as file:
+        file.write(command)
 
-    if "," in command:
-        raise ValueError("\",\" is not supported in the config file. If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
+def restoreConfiguration(product):
+    try:
+        with open(confFile.format(product), "r") as file:
+            command = file.read()
 
-    sendCommand(product, command)
+        if "," in command:
+            raise ValueError("\",\" is not supported in the config file. If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
+
+        sendCommand(product, command)
+    except FileNotFoundError:
+        pass # treat missing conf file as if empty
+    except DeviceNotFoundError:
+        pass # just skip missing devices
+
