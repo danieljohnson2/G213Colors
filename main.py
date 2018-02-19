@@ -181,23 +181,18 @@ class Window(Gtk.Window):
 
 if "-t" in option:
     myG = G213Colors
-    myG.connectG("G213")
 
     with open(myG.confFile, "r") as file:
+        command = file.read()
 
-        for command in file:
-            print(command)
-            command = command.strip()
-            if command and "," not in command:
-                myG.sendData(command)
-                sleep(0.01)
-
-            if "," in command:
-                print("\",\" is not supported in the config file.")
-                print("If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
-
-    myG.disconnectG()
-    sys.exit(0)
+    if "," in command:
+        print("\",\" is not supported in the config file.")
+        print("If you apply a color scheme with segments, please re-apply it or replace all \",\" with new lines in \"/etc/G213Colors.conf\".")
+    else:
+        myG.connectG("G213")
+        myG.sendData(command)
+        myG.disconnectG()
+        sys.exit(0)
 
 win = Window()
 win.connect("delete-event", Gtk.main_quit)
