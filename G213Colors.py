@@ -111,8 +111,6 @@ def sendCommand(product, command):
             print(bmRequestType, bmRequest, wv, wIndex, unhexed)
             device.ctrl_transfer(bmRequestType, bmRequest, wv, wIndex, unhexed)
             
-            sleep(0.01) # not sure why we need this; looks like fake synchronization
-
             # a second command is not accepted unless we read between commands
             if product == "G213":
                 device.read(0x82, 64)
