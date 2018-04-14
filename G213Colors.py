@@ -183,7 +183,7 @@ class Configuration:
         self.product = args.product
         self.mode = args.mode
         self.speed = args.speed
-        self.color = args.color
+        self.colors = args.color or []
         self.save_configuration = args.save_configuration
 
     def makeParser():
@@ -208,43 +208,37 @@ class Configuration:
         with open(destinationFile, "w") as file:
             print(self.product, file=file)
             print(self.mode, file=file)
-            if self.speed is not None:
+            if self.mode in ["cycle", "breathe"]:
                 print("--speed", file=file)
                 print(self.speed, file=file)
-            if self.color is not None:
+            if self.mode != "cycle":
                 print("--color", file=file)
-                for c in self.color: print(c, file=file)
+                for c in self.colors: print(c, file=file)
             
-    def restore(targets, sourceFile=confFile):
+    def restore(sourceFile=confFile):
         """
-        Reads the saved command and re-executes it. If the specified file
-        is missing this does nothing.
+        Reads the saved command and re-executes it.
         """
 
-        try:
-            fileArgs = []
-            with open(sourceFile, "r") as file:
-                for line in file:
-                    fileArgs.append(line.strip())
-            fileConfig = Configuration(fileArgs)
-            if fileConfig.mode != "restore":
-                fileConfig.run(allowed_targets = targets, ignore_missing_devices = True)
-        except FileNotFoundError:
-            pass # treat missing conf file as if empty
-
+        fileArgs = []
+        with open(sourceFile, "r") as file:
+            for line in file:
+                fileArgs.append(line.strip())
+        return Configuration(fileArgs)
+        
     def formatCommand(self, target):
         mode = self.mode
         
         if mode == "static":
-            return formatColorCommand(target, self.color[0])
+            return formatColorCommand(target, self.colors[0])
         elif mode == "cycle":
             return formatCycleCommand(target, self.speed)
         elif mode == "breathe":
-            return formatBreatheCommand(target, self.color[0], self.speed)
+            return formatBreatheCommand(target, self.colors[0], self.speed)
         elif mode == "segments":
-            return formatSegmentsCommand(target, self.color)
+            return formatSegmentsCommand(target, self.colors)
         
-    def run(self, allowed_targets = supportedProducts, ignore_missing_devices = False):
+    def apply(self, allowed_targets = supportedProducts, ignore_missing_devices = False):
         product = self.product
         mode = self.mode
         
@@ -256,7 +250,12 @@ class Configuration:
             targets = []
 
         if mode == "restore":
-            Configuration.restore(targets)
+            try:
+                restored = Configuration.restore()
+                if restored.mode != "restore":
+                    restored.apply(allowed_targets = targets, ignore_missing_devices = True)
+            except FileNotFoundError:
+                pass # missing file treated as no-op
         else:
             for target in targets:
                 try:
@@ -270,4 +269,4 @@ class Configuration:
 # Support use as command line!
 if len(argv)>1:
     config = Configuration(argv[1:])
-    config.run()
+    config.apply()

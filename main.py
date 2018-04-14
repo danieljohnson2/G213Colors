@@ -8,11 +8,38 @@ import gi
 import sys
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
+from gi.repository import Gdk
 
 NAME = "G213 Colors"
 
 class Window(Gtk.Window):
+    def restoreColors(self):
+        def btnSetHex(btn, color):
+            rgba = Gdk.RGBA()
+            rgba.parse("#" + color) # GDK wants HTML Style, leading '#'
+            btn.set_rgba(rgba)
 
+        try:
+            config = G213Colors.Configuration.restore()
+            print(config.mode)
+            if len(config.colors) > 0:
+                btnSetHex(self.staticColorButton, config.colors[0])
+                btnSetHex(self.breatheColorButton, config.colors[0])
+                
+            self.sbCycle.set_value(float(config.speed))
+            self.sbBCycle.set_value(float(config.speed))
+        
+            for b, c in zip(self.segmentColorBtns, config.colors):
+                btnSetHex(b, c)
+            
+            child = self.stack.get_child_by_name(config.mode)
+            if child is not None:
+                child.show()
+                self.stack.set_visible_child(child)
+                
+        except FileNotFoundError:
+            pass # nothing to restore
+        
     def makeCurrentCommand(self, product):
         """
         Generates the command for whatever the state of the UI is; we
@@ -128,5 +155,6 @@ class Window(Gtk.Window):
 
 win = Window()
 win.connect("delete-event", Gtk.main_quit)
+win.restoreColors()
 win.show_all()
 Gtk.main()
