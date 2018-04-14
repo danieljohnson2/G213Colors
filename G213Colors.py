@@ -47,24 +47,39 @@ class Product:
         self.wValue = wValue
         self.modeCommands = modeCommands
     
-    def sendCommand(self, mode, colors, speed, startField = 0):
-        cmd = self._makeCommand(mode, colors, speed, startField)
+    def apply(self, configuration):
+        """
+        Applies the configuration's settings to the hardware.
+        """
+        
+        cmd = self._makeCommand(configuration)
         self._sendCommand(cmd)
         
-    def _makeCommand(self, mode, colors, speed, startField = 0):
+    def _makeCommand(self, configuration):
         """
         Generates a command to set the device to the device color for
         each zone; you can have up to 6.
         """
+        
+        if configuration.mode == "segments":
+            fmt = self.modeCommands["static"]
+            startField = 1
+            colors = configuration.colors
+        else:
+            fmt = self.modeCommands[configuration.mode]
+            startField = 0
+            colors = configuration.colors[:1]
+            if len(colors) < 1: colors = [standardColor]
+            
         buffer = ""
+        
         for i, color in enumerate(colors):
             if i >= 5: raise ValueError("Too many colors- only 5 are allowed.")
             if i > 0: buffer += "\n"
-            fmt = self.modeCommands[mode]
             buffer += fmt.format(
                 field=int(startField+i),
                 color=color,
-                speed=speed)
+                speed=configuration.speed)
 
         return buffer
 
@@ -138,7 +153,6 @@ class Product:
         device, shouldReattach = connectG()
         try: transmit(device)
         finally: disconnectG(device, shouldReattach)
-
 
 g213Product = Product("G213", 0xc336, 0x0211,
     { "static":  "11ff0c3a{field:02x}01{color}0200000000000000000000",
@@ -230,17 +244,6 @@ class Configuration:
         """
         return "/etc/{product}Colors.conf".format(product=product.name)
         
-    def apply(self, product):
-        """
-        Applies the configuration's settings to the hardware.
-        """
-        
-        if self.mode == "segments":
-            product.sendCommand("static", self.colors, self.speed,
-                startField=1)
-        else:
-            product.sendCommand(self.mode, self.colors, self.speed)
-
 # Support use as command line!
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -261,7 +264,8 @@ if __name__ == "__main__":
     if args.mode == "restore":
         for product in products:
             try:
-                Configuration.restore(product).apply(product)
+                config = Configuration.restore(product)
+                product.apply(config)
             except FileNotFoundError: pass # missing file treated as no-op
             except DeviceNotFoundError: pass # missing device also                
     else:
@@ -271,7 +275,7 @@ if __name__ == "__main__":
         config.colors = args.color or []
         
         for product in products:
-            try: config.apply(product)
+            try: product.apply(config)
             except DeviceNotFoundError as ex: print(str(ex))
 
             if args.save_configuration: config.save(product)
