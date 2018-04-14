@@ -197,11 +197,10 @@ class Configuration:
         
     def save(self, product):
         """
-        Saves the configuration into a file as JSON.
+        Saves the configuration into a file as JSON; there is a file
+        for each product.
         """
-        rep = { 
-            "mode": self.mode
-        }
+        rep = { "mode": self.mode }
         
         if self.mode in ["cycle", "breathe"]:
             rep["speed"] = self.speed
@@ -214,8 +213,9 @@ class Configuration:
 
     def restore(product):
         """
-        Reads the JSON form of ther configuration and returns a new
-        Configuration object containing that data.
+        Reads the JSON form of the configuration from its file (which
+        depends on which product it is); this returns a new Configuration
+        and may raise exceptions if the file is not readable or parsable.
         """
         
         sourceFile = Configuration.confFileFor(product)        
@@ -233,6 +233,11 @@ class Configuration:
         return conf
                         
     def restoreAny():
+        """
+        Restores any product file; it tries each product in 'supportedProducts'
+        and returns the first it can read. Returns None if no usable file
+        is found.
+        """
         for product in supportedProducts:
             try: return Configuration.restore(product)
             except FileNotFoundError: pass
@@ -240,34 +245,25 @@ class Configuration:
         return None
         
     def confFileFor(product):
+        """
+        Returns the path to the configuration file for a product.
+        """
         return "/etc/{product}Colors.conf".format(product=product)
-
-    def formatCommand(self, product):
-        """
-        Generates a command to send to a specific product.
-        """
-        mode = self.mode
         
-        if mode == "static":
-            return formatColorCommand(product, self.colors[0])
-        elif mode == "cycle":
-            return formatCycleCommand(product, self.speed)
-        elif mode == "breathe":
-            return formatBreatheCommand(product, self.colors[0], self.speed)
-        elif mode == "segments":
-            return formatSegmentsCommand(product, self.colors)
+    def apply(self, product):
+        """
+        Applies the configuration's settings to the hardware.
+        """        
+        if self.mode == "static":
+            command = formatColorCommand(product, self.colors[0])
+        elif self.mode == "cycle":
+            command = formatCycleCommand(product, self.speed)
+        elif self.mode == "breathe":
+            command = formatBreatheCommand(product, self.colors[0], self.speed)
+        elif self.mode == "segments":
+            command = formatSegmentsCommand(product, self.colors)
         
-    def apply(self, product, ignore_missing_devices = False):
-        """
-        Applies the configuration's settings to the hardware; if
-        ignore_missing_devices is False, this method prints error messages
-        if any device is not found.
-        """
-
-        try:
-            sendCommand(product, self.formatCommand(product))
-        except DeviceNotFoundError as ex:
-            if not ignore_missing_devices: print(str(ex))
+        sendCommand(product, command)
 
 # Support use as command line!
 if __name__ == "__main__":
@@ -289,9 +285,9 @@ if __name__ == "__main__":
     if args.mode == "restore":
         for product in products:
             try:
-                Configuration.restore(product).apply(product, ignore_missing_devices = True)
-            except FileNotFoundError:
-                pass # missing file treated as no-op
+                Configuration.restore(product).apply(product)
+            except FileNotFoundError: pass # missing file treated as no-op
+            except DeviceNotFoundError: pass # missing device also                
     else:
         config = Configuration()
         config.mode = args.mode
@@ -299,7 +295,7 @@ if __name__ == "__main__":
         config.colors = args.color or []
         
         for product in products:
-            config.apply(product)
-        
-            if args.save_configuration:
-                config.save(product)
+            try: config.apply(product)
+            except DeviceNotFoundError as ex: print(str(ex))
+
+            if args.save_configuration: config.save(product)
