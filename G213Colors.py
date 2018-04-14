@@ -55,8 +55,6 @@ breatheCommand = {"G213": "11ff0c3a0002{color}{speed:04x}006400000000000000",
 cycleCommand   = {"G213": "11ff0c3a0003ffffff0000{speed:04x}64000000000000",
                   "G203": "11ff0e3c00020000000000{speed:04x}64000000000000"}
 
-confFile       = "/etc/G213Colors.conf"
-
 class DeviceNotFoundError(Exception):
     """An exception raised when connection to the device fails."""
     def __init__(self, product):
@@ -178,18 +176,30 @@ def sendSegmentsCommand(product, colorHexes):
     sendCommand(product, formatSegmentsCommand(product, colorHexes))
 
 class Configuration:
+
+    """
+    This class contains the configuration for a keyboard or mouse; it does
+    not know which, and we can apply the same configuration to either or
+    both.
+    
+    Attributes:
+        mode (string): static, cycle, breathe or segments
+        speed (int): cycle or breath time in milliseconds
+        colors (string array): 6 segment colors, or 1 color only,
+                               depending on mode. Each color is in hex
+                               for, RRGGBB.
+    """
+    
     def __init__(self):
-        self.product = "all"
         self.mode = "static"
         self.speed = 3000
         self.colors = []
         
-    def save(self, destinationFile=confFile):
+    def save(self, product):
         """
         Saves the configuration into a file as JSON.
         """
         rep = { 
-            "product": self.product,
             "mode": self.mode
         }
         
@@ -198,66 +208,69 @@ class Configuration:
         if self.mode != "cycle":
             rep["colors"] = self.colors
         
+        destinationFile = Configuration.confFileFor(product)
         with open(destinationFile, "w") as file:
             json.dump(rep, file)
-            
-    def restore(sourceFile=confFile):
+
+    def restore(product):
         """
         Reads the JSON form of ther configuration and returns a new
         Configuration object containing that data.
         """
         
+        sourceFile = Configuration.confFileFor(product)        
         with open(sourceFile, "r") as file:
             rep = json.load(file)
         
         conf = Configuration()
-        conf.product = rep.get("product", "all")
         conf.mode = rep.get("mode", "static")
         conf.speed = rep.get("speed", 3000)
         conf.colors = rep.get("colors", [])
         
-        if conf.product != "all" and conf.product not in supportedProducts:
-            raise ValueError("'{product}' is not a valid product.".format(product=conf.product))
-            
         if conf.mode not in ("static", "cycle", "breathe", "segments"):
             raise ValueError("'{mode}' is not a valid mode.".format(mode=conf.mode))
 
         return conf
+                        
+    def restoreAny():
+        for product in supportedProducts:
+            try: return Configuration.restore(product)
+            except FileNotFoundError: pass
+            except ValueError: pass
+        return None
         
-    def formatCommand(self, target):
+    def confFileFor(product):
+        return "/etc/{product}Colors.conf".format(product=product)
+
+    def formatCommand(self, product):
         """
-        Generates a command to send to a spefific target (self.product
-        is ignored).
+        Generates a command to send to a specific product.
         """
         mode = self.mode
         
         if mode == "static":
-            return formatColorCommand(target, self.colors[0])
+            return formatColorCommand(product, self.colors[0])
         elif mode == "cycle":
-            return formatCycleCommand(target, self.speed)
+            return formatCycleCommand(product, self.speed)
         elif mode == "breathe":
-            return formatBreatheCommand(target, self.colors[0], self.speed)
+            return formatBreatheCommand(product, self.colors[0], self.speed)
         elif mode == "segments":
-            return formatSegmentsCommand(target, self.colors)
+            return formatSegmentsCommand(product, self.colors)
         
-    def apply(self, ignore_missing_devices = False):
+    def apply(self, product, ignore_missing_devices = False):
         """
         Applies the configuration's settings to the hardware; if
         ignore_missing_devices is False, this method prints error messages
         if any device is not found.
         """
-        product = self.product
-        mode = self.mode
-        targets = [product] if product != "all" else supportedProducts
 
-        for target in targets:
-            try:
-                sendCommand(target, self.formatCommand(target))
-            except DeviceNotFoundError as ex:
-                if not ignore_missing_devices: print(str(ex))
+        try:
+            sendCommand(product, self.formatCommand(product))
+        except DeviceNotFoundError as ex:
+            if not ignore_missing_devices: print(str(ex))
 
 # Support use as command line!
-if len(argv)>1:
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("product", choices=supportedProducts + ["all"],
         help="The product name whose colors are to be configured.")
@@ -271,19 +284,22 @@ if len(argv)>1:
         help="Save the new configuration back to the configuration file, for use by the restore mode.")
 
     args = parser.parse_args()
+    products = [args.product] if args.product != "all" else supportedProducts
     
     if args.mode == "restore":
-        try:
-            Configuration.restore().apply(ignore_missing_devices = True)
-        except FileNotFoundError:
-            pass # missing file treated as no-op
+        for product in products:
+            try:
+                Configuration.restore(product).apply(product, ignore_missing_devices = True)
+            except FileNotFoundError:
+                pass # missing file treated as no-op
     else:
         config = Configuration()
-        config.product = args.product
         config.mode = args.mode
         config.speed = args.speed
         config.colors = args.color or []
-        config.apply()
         
-        if args.save_configuration:
-            config.save()
+        for product in products:
+            config.apply(product)
+        
+            if args.save_configuration:
+                config.save(product)

@@ -19,9 +19,9 @@ class Window(Gtk.Window):
             rgba.parse("#" + color) # GDK wants HTML Style, leading '#'
             btn.set_rgba(rgba)
 
-        try:
-            config = G213Colors.Configuration.restore()
+        config = G213Colors.Configuration.restoreAny()
 
+        if config is not None:
             if len(config.colors) > 0:
                 btnSetHex(self.staticColorButton, config.colors[0])
                 btnSetHex(self.breatheColorButton, config.colors[0])
@@ -36,12 +36,7 @@ class Window(Gtk.Window):
             if child is not None:
                 child.show()
                 self.stack.set_visible_child(child)
-                
-        except FileNotFoundError:
-            pass # nothing to restore
-        except ValueError:
-            pass # invalid conf file, but we'll just replace it
-        
+
     def makeCurrentCommand(self, product):
         """
         Generates the command for whatever the state of the UI is; we
