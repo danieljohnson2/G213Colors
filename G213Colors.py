@@ -36,11 +36,26 @@ import argparse
 standardColor = 'ffb4aa' # Standard color, i found this color to produce a white color on my G213
 
 class DeviceNotFoundError(Exception):
-    """An exception raised when connection to the device fails."""
+    """An exception raised when connection to the G-device fails."""
     def __init__(self, product):
-        Exception.__init__(self, "USB Device not found: " + product)
+        Exception.__init__(self, "USB Device not found: " + product.name)
 
 class Product:
+
+    """
+    This represents a G-device, either a keyboard or mouse. It has the logic
+    to transmit a configuration to the device. Tha attributes it has provide
+    the information needed to do this:
+    
+    name (str): A human readable name for the device
+    idProduct (int): The product ID identifying the device
+    wValue (int): Heaven only knows. USB voodoo.
+    modeCommands: A dictionary keyed on a mode (static, cycle, etc) and
+                  which contains strings with the binary commands to send;
+                  these are in hex form, but with {insertions} for use with
+                  the format method to provide hte field, color and speed.
+    """
+    
     def __init__(self, name, idProduct, wValue, modeCommands):
         self.name = name
         self.idProduct = idProduct
@@ -57,8 +72,9 @@ class Product:
         
     def _makeCommand(self, configuration):
         """
-        Generates a command to set the device to the device color for
-        each zone; you can have up to 6.
+        Constructs the (hex format) commands block to send to
+        implement a configuration. This maps thje "Segments" mode
+        into multiple "static" operations.
         """
         
         if configuration.mode == "segments":
@@ -114,7 +130,7 @@ class Product:
             device = usb.core.find(idVendor=idVendor, idProduct=self.idProduct)
             
             if device is None:
-                raise DeviceNotFoundError(self.name)
+                raise DeviceNotFoundError(self)
                 
             # if a kernel driver is attached to the interface detach it,
             # otherwise no data can be sent
