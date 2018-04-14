@@ -158,22 +158,6 @@ def formatSegmentsCommand(product, colorHexes):
         if i > 0: buffer += "\n"
         buffer += formatColorCommand(product, colorHex, int(i+1))
     return buffer
-    
-def sendColorCommand(product, colorHex):
-    """Sets the device color in one step."""
-    sendCommand(product, formatColorCommand(product, colorHex))
-
-def sendBreatheCommand(product, colorHex, speed):
-    """Sets the device to 'breathe' in one step."""
-    sendCommand(product, formatBreatheCommand(product, colorHex, speed))
-
-def sendCycleCommand(product, speed):
-    """Sets the device to 'cycle' in one step."""
-    sendCommand(product, formatCycleCommand(product, speed))
-
-def sendSegmentsCommand(product, colorHexes):
-    """Sets the device colors by zone in one step."""
-    sendCommand(product, formatSegmentsCommand(product, colorHexes))
 
 class Configuration:
 
