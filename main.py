@@ -21,7 +21,7 @@ class Window(Gtk.Window):
 
         try:
             config = G213Colors.Configuration.restore()
-            print(config.mode)
+
             if len(config.colors) > 0:
                 btnSetHex(self.staticColorButton, config.colors[0])
                 btnSetHex(self.breatheColorButton, config.colors[0])
@@ -39,6 +39,8 @@ class Window(Gtk.Window):
                 
         except FileNotFoundError:
             pass # nothing to restore
+        except ValueError:
+            pass # invalid conf file, but we'll just replace it
         
     def makeCurrentCommand(self, product):
         """

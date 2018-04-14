@@ -30,6 +30,7 @@ from sys import argv
 import usb.core
 import usb.util
 import binascii
+import json
 import argparse
 
 supportedProducts = ["G213", "G203"] # The products this module supports
@@ -177,56 +178,57 @@ def sendSegmentsCommand(product, colorHexes):
     sendCommand(product, formatSegmentsCommand(product, colorHexes))
 
 class Configuration:
-    def __init__(self, arguments):
-        args = Configuration.makeParser().parse_args(arguments)
-        
-        self.product = args.product
-        self.mode = args.mode
-        self.speed = args.speed
-        self.colors = args.color or []
-        self.save_configuration = args.save_configuration
-
-    def makeParser():
-        parser = argparse.ArgumentParser()
-        parser.add_argument("product", choices=supportedProducts + ["all"],
-            help="The product name whose colors are to be configured.")
-        parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments", "restore"],
-            help="The mode to put the device it, or restore to reload the most recent configuration.")
-        parser.add_argument("-c", "--color", default=[standardColor], nargs="+",
-            help="The color (in hex RRGGBB) to display on the device. Up to 6 colors may be used for segments mode.")
-        parser.add_argument("-s", "--speed", default=3000, type=int,
-            help="The speed (in milliseconds) to cycle or breathe at.")
-        parser.add_argument("--save-configuration", action="store_true",
-            help="Save the new configuration back to the configuration file, for use by the restore mode.")
-        return parser
+    def __init__(self):
+        self.product = "all"
+        self.mode = "static"
+        self.speed = 3000
+        self.colors = []
         
     def save(self, destinationFile=confFile):
         """
-        Saves a command in a file for later restoration. The initial argument,
-        the command name, is removed, and so is the save-configuration option.
+        Saves the configuration into a file as JSON.
         """
+        rep = { 
+            "product": self.product,
+            "mode": self.mode
+        }
+        
+        if self.mode in ["cycle", "breathe"]:
+            rep["speed"] = self.speed
+        if self.mode != "cycle":
+            rep["colors"] = self.colors
+        
         with open(destinationFile, "w") as file:
-            print(self.product, file=file)
-            print(self.mode, file=file)
-            if self.mode in ["cycle", "breathe"]:
-                print("--speed", file=file)
-                print(self.speed, file=file)
-            if self.mode != "cycle":
-                print("--color", file=file)
-                for c in self.colors: print(c, file=file)
+            json.dump(rep, file)
             
     def restore(sourceFile=confFile):
         """
-        Reads the saved command and re-executes it.
+        Reads the JSON form of ther configuration and returns a new
+        Configuration object containing that data.
         """
-
-        fileArgs = []
+        
         with open(sourceFile, "r") as file:
-            for line in file:
-                fileArgs.append(line.strip())
-        return Configuration(fileArgs)
+            rep = json.load(file)
+        
+        conf = Configuration()
+        conf.product = rep.get("product", "all")
+        conf.mode = rep.get("mode", "static")
+        conf.speed = rep.get("speed", 3000)
+        conf.colors = rep.get("colors", [])
+        
+        if conf.product != "all" and conf.product not in supportedProducts:
+            raise ValueError("'{product}' is not a valid product.".format(product=conf.product))
+            
+        if conf.mode not in ("static", "cycle", "breathe", "segments"):
+            raise ValueError("'{mode}' is not a valid mode.".format(mode=conf.mode))
+
+        return conf
         
     def formatCommand(self, target):
+        """
+        Generates a command to send to a spefific target (self.product
+        is ignored).
+        """
         mode = self.mode
         
         if mode == "static":
@@ -238,35 +240,50 @@ class Configuration:
         elif mode == "segments":
             return formatSegmentsCommand(target, self.colors)
         
-    def apply(self, allowed_targets = supportedProducts, ignore_missing_devices = False):
+    def apply(self, ignore_missing_devices = False):
+        """
+        Applies the configuration's settings to the hardware; if
+        ignore_missing_devices is False, this method prints error messages
+        if any device is not found.
+        """
         product = self.product
         mode = self.mode
-        
-        if product == "all":
-            targets = allowed_targets 
-        elif product in allowed_targets:
-            targets = [product]
-        else:
-            targets = []
+        targets = [product] if product != "all" else supportedProducts
 
-        if mode == "restore":
+        for target in targets:
             try:
-                restored = Configuration.restore()
-                if restored.mode != "restore":
-                    restored.apply(allowed_targets = targets, ignore_missing_devices = True)
-            except FileNotFoundError:
-                pass # missing file treated as no-op
-        else:
-            for target in targets:
-                try:
-                    sendCommand(target, self.formatCommand(target))
-                except DeviceNotFoundError as ex:
-                    if not ignore_missing_devices:
-                        print(str(ex))
-                        
-            if self.save_configuration: self.save()
+                sendCommand(target, self.formatCommand(target))
+            except DeviceNotFoundError as ex:
+                if not ignore_missing_devices: print(str(ex))
 
 # Support use as command line!
 if len(argv)>1:
-    config = Configuration(argv[1:])
-    config.apply()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("product", choices=supportedProducts + ["all"],
+        help="The product name whose colors are to be configured.")
+    parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments", "restore"],
+        help="The mode to put the device it, or restore to reload the most recent configuration.")
+    parser.add_argument("-c", "--color", default=[standardColor], nargs="+",
+        help="The color (in hex RRGGBB) to display on the device. Up to 6 colors may be used for segments mode.")
+    parser.add_argument("-s", "--speed", default=3000, type=int,
+        help="The speed (in milliseconds) to cycle or breathe at.")
+    parser.add_argument("--save-configuration", action="store_true",
+        help="Save the new configuration back to the configuration file, for use by the restore mode.")
+
+    args = parser.parse_args()
+    
+    if args.mode == "restore":
+        try:
+            Configuration.restore().apply(ignore_missing_devices = True)
+        except FileNotFoundError:
+            pass # missing file treated as no-op
+    else:
+        config = Configuration()
+        config.product = args.product
+        config.mode = args.mode
+        config.speed = args.speed
+        config.colors = args.color or []
+        config.apply()
+        
+        if args.save_configuration:
+            config.save()
