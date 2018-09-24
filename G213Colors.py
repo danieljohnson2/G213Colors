@@ -61,6 +61,9 @@ class Product:
         self.idProduct = idProduct
         self.wValue = wValue
         self.modeCommands = modeCommands
+        
+    def __str__(self):
+        return self.name
     
     def apply(self, configuration):
         """
