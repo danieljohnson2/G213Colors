@@ -62,9 +62,6 @@ class Product:
         self.wValue = wValue
         self.modeCommands = modeCommands
         
-    def __str__(self):
-        return self.name
-    
     def apply(self, configuration):
         """
         Applies the configuration's settings to the hardware.
@@ -266,7 +263,7 @@ class Configuration:
 # Support use as command line!
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("product", choices=supportedProducts + ["all"],
+    parser.add_argument("product", choices=list(productsByName) + ["all"],
         help="The product name whose colors are to be configured.")
     parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments", "restore"],
         help="The mode to put the device it, or restore to reload the most recent configuration.")
