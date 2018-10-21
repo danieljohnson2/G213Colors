@@ -72,6 +72,8 @@ You can also do this automatically at reboot by enabling the systemd service.
 sudo systemctl enable g213colors.service
 ```
 
+If you install using the makefile, this will be done automatically.
+
 ## Known issues
 
 

@@ -14,6 +14,7 @@ install :
 	cp G213Colors.desktop /usr/share/applications/g213colors.desktop
 	cp G213Colors.py.policy /usr/share/polkit-1/actions/G213Colors.py.policy
 	gtk-update-icon-cache -q /usr/share/icons/hicolor/
+	systemctl enable g213colors.service
 	systemctl daemon-reload
 uninstall :
 	rm /usr/bin/G213Colors.py
