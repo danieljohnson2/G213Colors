@@ -37,10 +37,10 @@ class Window(Gtk.Window):
                 child.show()
                 self.stack.set_visible_child(child)
 
-    def makeCurrentCommand(self, product):
+    def makeCurrentCommand(self, product_name):
         """
         Generates the command for whatever the state of the UI is; we
-        generate the commmands for the indicated product.
+        generate the commmands for the indicated product_name.
         """
         def makeStaticArgs():
             colorHex = btnGetHex(self.staticColorButton)
@@ -77,11 +77,11 @@ class Window(Gtk.Window):
         
         mode = self.stack.get_visible_child_name()
         args = makers[mode]()
-        return ["pkexec", G213Colors.__file__, product.name, mode, "--save-configuration"] + args
+        return ["pkexec", G213Colors.__file__, product_name, mode, "--save-configuration"] + args
 
 
-    def on_button_clicked(self, button, product):
-        command = self.makeCurrentCommand(product)
+    def on_button_clicked(self, button, product_name):
+        command = self.makeCurrentCommand(product_name)
         subprocess.run(command) # fails if device missing, but we ignore!
 
     def __init__(self):
@@ -142,7 +142,7 @@ class Window(Gtk.Window):
         for p in G213Colors.supportedProducts:
             btn = Gtk.Button.new_with_label("Set" + p.name)
             hBoxSetButtons.pack_start(btn, True, True, 0)
-            btn.connect("clicked", self.on_button_clicked, p)
+            btn.connect("clicked", self.on_button_clicked, p.name)
         vBoxMain.pack_start(hBoxSetButtons, True, True, 0)
 
         ###SET ALL BUTTON
