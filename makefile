@@ -17,6 +17,7 @@ install :
 	systemctl enable g213colors.service
 	systemctl daemon-reload
 uninstall :
+	systemctl disable g213colors.service
 	rm /usr/bin/G213Colors.py
 	rm /usr/bin/g213colors-gui
 	rm /etc/G213Colors.conf

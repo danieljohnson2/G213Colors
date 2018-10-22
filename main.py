@@ -77,7 +77,7 @@ class Window(Gtk.Window):
         
         mode = self.stack.get_visible_child_name()
         args = makers[mode]()
-        return ["pkexec", G213Colors.__file__, product, mode, "--save-configuration"] + args
+        return ["pkexec", G213Colors.__file__, product.name, mode, "--save-configuration"] + args
 
 
     def on_button_clicked(self, button, product):
