@@ -25,8 +25,6 @@
 
 
 from __future__ import print_function
-from time import sleep
-from sys import argv
 import usb.core
 import usb.util
 import binascii

@@ -2,10 +2,8 @@
 
 from __future__ import print_function
 import G213Colors
-from time import sleep
 import subprocess
 import gi
-import sys
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
