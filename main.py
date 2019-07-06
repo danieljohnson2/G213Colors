@@ -24,7 +24,7 @@ class Window(Gtk.Window):
         self.pages = []
         for p in G213Colors.supportedProducts:
             page = Page(p)
-            notebook.append_page(page, Gtk.Label(label=p.name))
+            notebook.append_page(page, Gtk.Label(label=p.long_name))
             self.pages.append(page)
         
         ###SET ALL BUTTON
@@ -79,11 +79,14 @@ class Page(Gtk.Box):
         self.stack.add_titled(vBoxBreathe, "breathe", "Breathe")
 
         ###SEGMENTS TAB
-        hBoxSegments = Gtk.Box(spacing=5)
-        self.segmentColorBtns = [Gtk.ColorButton() for _ in range(5)]
-        for btn in self.segmentColorBtns:
-            hBoxSegments.pack_start(btn, True, True, 0)
-        self.stack.add_titled(hBoxSegments, "segments", "Segments")
+        if product.max_segments > 1:
+            hBoxSegments = Gtk.Box(spacing=5)
+            self.segmentColorBtns = [Gtk.ColorButton() for _ in range(5)]
+            for btn in self.segmentColorBtns:
+                hBoxSegments.pack_start(btn, True, True, 0)
+            self.stack.add_titled(hBoxSegments, "segments", "Segments")
+        else:
+            self.segmentColorBtns = []
 
         ###STACK
         self.stack_switcher = Gtk.StackSwitcher()

@@ -54,8 +54,10 @@ class Product:
                   the format method to provide hte field, color and speed.
     """
     
-    def __init__(self, name, idProduct, wValue, modeCommands):
+    def __init__(self, name, long_name, max_segments, idProduct, wValue, modeCommands):
         self.name = name
+        self.long_name = long_name
+        self.max_segments = max_segments
         self.idProduct = idProduct
         self.wValue = wValue
         self.modeCommands = modeCommands
@@ -88,8 +90,11 @@ class Product:
         buffer = ""
         
         for i, color in enumerate(colors):
-            if i >= 5: raise ValueError("Too many colors- only 5 are allowed.")
+            if i >= self.max_segments:
+                raise ValueError(f"Too many colors- only {self.max_segments} are allowed.")
+
             if i > 0: buffer += "\n"
+
             buffer += fmt.format(
                 field=int(startField+i),
                 color=color,
@@ -168,12 +173,12 @@ class Product:
         try: transmit(device)
         finally: disconnectG(device, shouldReattach)
 
-g213Product = Product("G213", 0xc336, 0x0211,
+g213Product = Product("G213", "G213 Keyboard", 5, 0xc336, 0x0211,
     { "static":  "11ff0c3a{field:02x}01{color}0200000000000000000000",
       "breathe": "11ff0c3a0002{color}{speed:04x}006400000000000000",
       "cycle":   "11ff0c3a0003ffffff0000{speed:04x}64000000000000" })
       
-g203Product = Product("G203", 0xc084, 0x0210,
+g203Product = Product("G203", "G203 Mouse", 1, 0xc084, 0x0210,
     { "static":  "11ff0e3c{field:02x}01{color}0200000000000000000000",
       "breathe": "11ff0e3c0003{color}{speed:04x}006400000000000000",
       "cycle":   "11ff0e3c00020000000000{speed:04x}64000000000000" })
