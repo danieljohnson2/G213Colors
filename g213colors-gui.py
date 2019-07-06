@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from __future__ import print_function
-import G213Colors
+import g213colors
 import subprocess
 import gi
 gi.require_version('Gtk', '3.0')
@@ -22,7 +22,7 @@ class Window(Gtk.Window):
         vBoxOuter.add(notebook)
 
         self.pages = []
-        for p in G213Colors.supported_products:
+        for p in g213colors.supported_products:
             page = ProductPage(p)
             notebook.append_page(page, Gtk.Label(label=p.long_name))
             self.pages.append(page)
@@ -111,7 +111,7 @@ class ProductPage(Gtk.Box):
             rgba.parse("#" + color) # GDK wants HTML Style, leading '#'
             btn.set_rgba(rgba)
         
-        try: config = G213Colors.Configuration.restore(self.product)
+        try: config = g213colors.Configuration.restore(self.product)
         except FileNotFoundError: return
         except ValueError: return
         
@@ -167,7 +167,7 @@ class ProductPage(Gtk.Box):
         
         mode = self.stack.get_visible_child_name()
         args = makers[mode]()
-        return ["pkexec", G213Colors.__file__, self.product.name, mode, "--save-configuration"] + args
+        return ["pkexec", g213colors.__file__, self.product.name, mode, "--save-configuration"] + args
 
     def apply(self):
         command = self.make_command()

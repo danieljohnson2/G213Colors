@@ -184,8 +184,8 @@ g203_product = Product("G203", "G203 Mouse", 1, 0xc084, 0x0210,
       "cycle":   "11ff0e3c00020000000000{speed:04x}64000000000000" })
 
 products_by_name = { "G213": [g213_product],
-                   "G203": [g203_product],
-                   "all": [g213_product, g203_product] }
+                     "G203": [g203_product],
+                     "all": [g213_product, g203_product] }
 supported_products = [g213_product, g203_product]
 
 class Configuration:
@@ -241,7 +241,7 @@ class Configuration:
         conf.colors = rep.get("colors", [])
         
         if conf.mode not in ("static", "cycle", "breathe", "segments"):
-            raise ValueError("'{mode}' is not a valid mode.".format(mode=conf.mode))
+            raise ValueError(f"'{conf.mode}' is not a valid mode.")
 
         return conf
                         
@@ -261,7 +261,7 @@ class Configuration:
         """
         Returns the path to the configuration file for a product.
         """
-        return "/etc/{product}Colors.conf".format(product=product.name)
+        return f"/etc/{product.name.lower()}colors.conf"
         
 # Support use as command line!
 if __name__ == "__main__":
