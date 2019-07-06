@@ -14,14 +14,14 @@ NAME = "G213 Colors"
 class Window(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title=NAME)
-        self.set_border_width(10)
         self.set_icon_name("g213colors")
         self.set_wmclass(NAME, NAME) # deprecated, but what else works?
         
-        vBoxOuter = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        vBoxOuter = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(vBoxOuter)
 
         notebook = Gtk.Notebook()
+        notebook.set_show_border(False)
         vBoxOuter.add(notebook)
 
         self.pages = []
@@ -30,11 +30,17 @@ class Window(Gtk.Window):
             notebook.append_page(page, Gtk.Label(label=p.long_name))
             self.pages.append(page)
         
+        separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        vBoxOuter.pack_start(separator, False, False, 0)
+
         btnAlignBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         btnSetAll = Gtk.Button.new_with_label("Apply both")
         btnSetAll.connect("clicked", self.on_button_clicked)
         btnSetAll.halign = Gtk.Align.END
         btnSetAll.hexpand = False
+        btnSetAll.set_margin_end(5)
+        btnSetAll.set_margin_top(5)
+        btnSetAll.set_margin_bottom(5)
         btnAlignBox.pack_end(btnSetAll, False, False, 0)
         vBoxOuter.pack_start(btnAlignBox, False, False, 0)
 
