@@ -22,8 +22,8 @@ class Window(Gtk.Window):
         vBoxOuter.add(notebook)
 
         self.pages = []
-        for p in G213Colors.supportedProducts:
-            page = Page(p)
+        for p in G213Colors.supported_products:
+            page = ProductPage(p)
             notebook.append_page(page, Gtk.Label(label=p.long_name))
             self.pages.append(page)
         
@@ -35,15 +35,15 @@ class Window(Gtk.Window):
         btnAlignBox.pack_end(btnSetAll, False, False, 0)
         vBoxOuter.pack_start(btnAlignBox, False, False, 0)
 
-    def restoreColors(self):
+    def restore_colors(self):
         for page in self.pages:
-            page.restoreColors();
+            page.restore_colors();
 
     def on_button_clicked(self, button):
         for page in self.pages:
             page.apply()
 
-class Page(Gtk.Box):
+class ProductPage(Gtk.Box):
     def __init__(self, product):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=5)
         self.set_border_width(10)
@@ -100,13 +100,13 @@ class Page(Gtk.Box):
         ###SET BUTTON
         btnAlignBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         btn = Gtk.Button.new_with_label("Apply to " + product.name)
-        btn.connect("clicked", self.on_button_clicked)
+        btn.connect("clicked", lambda btn: self.apply())
 
         btnAlignBox.pack_end(btn, False, False, 0)
         self.pack_start(btnAlignBox, True, True, 0)
 
-    def restoreColors(self):
-        def btnSetHex(btn, color):
+    def restore_colors(self):
+        def set_color_button_from_hex(btn, color):
             rgba = Gdk.RGBA()
             rgba.parse("#" + color) # GDK wants HTML Style, leading '#'
             btn.set_rgba(rgba)
@@ -116,43 +116,43 @@ class Page(Gtk.Box):
         except ValueError: return
         
         if len(config.colors) > 0:
-            btnSetHex(self.staticColorButton, config.colors[0])
-            btnSetHex(self.breatheColorButton, config.colors[0])
+            set_color_button_from_hex(self.staticColorButton, config.colors[0])
+            set_color_button_from_hex(self.breatheColorButton, config.colors[0])
             
         self.sbCycle.set_value(float(config.speed))
         self.sbBCycle.set_value(float(config.speed))
     
         for b, c in zip(self.segmentColorBtns, config.colors):
-            btnSetHex(b, c)
+            set_color_button_from_hex(b, c)
         
         child = self.stack.get_child_by_name(config.mode)
         if child is not None:
             child.show()
             self.stack.set_visible_child(child)
 
-    def makeCommand(self):
+    def make_command(self):
         """
         Generates the command for whatever the state of the UI is; we
         generate the commmands for the page's product.
         """
-        def makeStaticArgs():
-            colorHex = btnGetHex(self.staticColorButton)
+        def make_static_args():
+            colorHex = get_color_button_hex(self.staticColorButton)
             return ["-c", colorHex]
 
-        def makeBreatheArgs():
-            colorHex = btnGetHex(self.breatheColorButton)
-            speed = sbGetValue(self.sbBCycle)
+        def make_breathe_args():
+            colorHex = get_color_button_hex(self.breatheColorButton)
+            speed = self.sbBCycle.get_value_as_int()
             return ["-c", colorHex, "-s", str(speed)]
             
-        def makeCycleArgs():
-            speed = sbGetValue(self.sbCycle)
+        def make_cycle_args():
+            speed = self.sbCycle.get_value_as_int()
             return ["-s", str(speed)]
         
-        def makeSegmentsArgs():
-            colorHexes = [btnGetHex(b) for b in self.segmentColorBtns]
+        def make_segments_args():
+            colorHexes = [get_color_button_hex(b) for b in self.segmentColorBtns]
             return ["-c"] + colorHexes
         
-        def btnGetHex(btn):
+        def get_color_button_hex(btn):
             color = btn.get_rgba()
             red = int(color.red * 255)
             green = int(color.green * 255)
@@ -160,27 +160,21 @@ class Page(Gtk.Box):
             hexColor = "%02x%02x%02x" % (red, green, blue)
             return hexColor
 
-        def sbGetValue(sb):
-            return sb.get_value_as_int()
-
-        makers = { "static" : makeStaticArgs,
-                   "cycle" : makeCycleArgs,
-                   "breathe" : makeBreatheArgs,
-                   "segments" : makeSegmentsArgs }
+        makers = { "static" : make_static_args,
+                   "cycle" : make_cycle_args,
+                   "breathe" : make_breathe_args,
+                   "segments" : make_segments_args }
         
         mode = self.stack.get_visible_child_name()
         args = makers[mode]()
         return ["pkexec", G213Colors.__file__, self.product.name, mode, "--save-configuration"] + args
 
     def apply(self):
-        command = self.makeCommand()
+        command = self.make_command()
         subprocess.run(command) # fails if device missing, but we ignore!
-
-    def on_button_clicked(self, button):
-        self.apply()
 
 win = Window()
 win.connect("delete-event", Gtk.main_quit)
-win.restoreColors()
+win.restore_colors()
 win.show_all()
 Gtk.main()

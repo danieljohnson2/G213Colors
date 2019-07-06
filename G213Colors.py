@@ -67,10 +67,10 @@ class Product:
         Applies the configuration's settings to the hardware.
         """
         
-        cmd = self._makeCommand(configuration)
-        self._sendCommand(cmd)
+        cmd = self._make_command(configuration)
+        self._send_command(cmd)
         
-    def _makeCommand(self, configuration):
+    def _make_command(self, configuration):
         """
         Constructs the (hex format) commands block to send to
         implement a configuration. This maps thje "Segments" mode
@@ -102,7 +102,7 @@ class Product:
 
         return buffer
 
-    def _sendCommand(self, command):
+    def _send_command(self, command):
         """
         This sends commands to a G-device. The command parameter is a
         command  block to send. This may contain multiple commands,
@@ -123,10 +123,10 @@ class Product:
         wIndex         = 0x0001
         idVendor       = 0x046d # The id of the Logitech company
   
-        def connectG():
+        def connect():
             """
             Returns device object and a flag indicating if a kernel driver
-            should be reconnected; pass all this to disconnectG() to restore
+            should be reconnected; pass all this to disconnect() to restore
             normal function.
             """
             print("Connecting to " + self.name)
@@ -160,7 +160,7 @@ class Product:
                 if self.name == "G213":
                     device.read(0x82, 64)
 
-        def disconnectG(device, shouldReattach):
+        def disconnect(device, shouldReattach):
             print("Disconnecting")
             # free device resource to be able to reattach kernel driver
             usb.util.dispose_resources(device)
@@ -169,24 +169,24 @@ class Product:
                 print("Reattaching kernel driver");
                 device.attach_kernel_driver(wIndex)
         
-        device, shouldReattach = connectG()
+        device, shouldReattach = connect()
         try: transmit(device)
-        finally: disconnectG(device, shouldReattach)
+        finally: disconnect(device, shouldReattach)
 
-g213Product = Product("G213", "G213 Keyboard", 5, 0xc336, 0x0211,
+g213_product = Product("G213", "G213 Keyboard", 5, 0xc336, 0x0211,
     { "static":  "11ff0c3a{field:02x}01{color}0200000000000000000000",
       "breathe": "11ff0c3a0002{color}{speed:04x}006400000000000000",
       "cycle":   "11ff0c3a0003ffffff0000{speed:04x}64000000000000" })
       
-g203Product = Product("G203", "G203 Mouse", 1, 0xc084, 0x0210,
+g203_product = Product("G203", "G203 Mouse", 1, 0xc084, 0x0210,
     { "static":  "11ff0e3c{field:02x}01{color}0200000000000000000000",
       "breathe": "11ff0e3c0003{color}{speed:04x}006400000000000000",
       "cycle":   "11ff0e3c00020000000000{speed:04x}64000000000000" })
 
-productsByName = { "G213": [g213Product],
-                   "G203": [g203Product],
-                   "all": [g213Product, g203Product] }
-supportedProducts = [g213Product, g203Product]
+products_by_name = { "G213": [g213_product],
+                   "G203": [g203_product],
+                   "all": [g213_product, g203_product] }
+supported_products = [g213_product, g203_product]
 
 class Configuration:
 
@@ -220,7 +220,7 @@ class Configuration:
         if self.mode != "cycle":
             rep["colors"] = self.colors
         
-        destinationFile = Configuration.confFileFor(product)
+        destinationFile = Configuration.get_configuration_file(product)
         with open(destinationFile, "w") as file:
             json.dump(rep, file)
 
@@ -231,7 +231,7 @@ class Configuration:
         and may raise exceptions if the file is not readable or parsable.
         """
         
-        sourceFile = Configuration.confFileFor(product)        
+        sourceFile = Configuration.get_configuration_file(product)        
         with open(sourceFile, "r") as file:
             rep = json.load(file)
         
@@ -245,19 +245,19 @@ class Configuration:
 
         return conf
                         
-    def restoreAny():
+    def restore_any():
         """
-        Restores any product file; it tries each product in 'supportedProducts'
+        Restores any product file; it tries each product in 'supported_products'
         and returns the first it can read. Returns None if no usable file
         is found.
         """
-        for product in supportedProducts:
+        for product in supported_products:
             try: return Configuration.restore(product)
             except FileNotFoundError: pass
             except ValueError: pass
         return None
         
-    def confFileFor(product):
+    def get_configuration_file(product):
         """
         Returns the path to the configuration file for a product.
         """
@@ -266,7 +266,7 @@ class Configuration:
 # Support use as command line!
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("product", choices=list(productsByName) + ["all"],
+    parser.add_argument("product", choices=list(products_by_name) + ["all"],
         help="The product name whose colors are to be configured.")
     parser.add_argument("mode", choices=["static", "cycle", "breathe", "segments", "restore"],
         help="The mode to put the device it, or restore to reload the most recent configuration.")
@@ -278,7 +278,7 @@ if __name__ == "__main__":
         help="Save the new configuration back to the configuration file, for use by the restore mode.")
 
     args = parser.parse_args()
-    products = productsByName[args.product]
+    products = products_by_name[args.product]
     
     if args.mode == "restore":
         for product in products:
