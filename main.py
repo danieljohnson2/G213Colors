@@ -27,10 +27,13 @@ class Window(Gtk.Window):
             notebook.append_page(page, Gtk.Label(label=p.long_name))
             self.pages.append(page)
         
-        ###SET ALL BUTTON
-        btnSetAll = Gtk.Button.new_with_label("Set all")
+        btnAlignBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        btnSetAll = Gtk.Button.new_with_label("Apply both")
         btnSetAll.connect("clicked", self.on_button_clicked)
-        vBoxOuter.pack_start(btnSetAll, True, True, 0)
+        btnSetAll.halign = Gtk.Align.END
+        btnSetAll.hexpand = False
+        btnAlignBox.pack_end(btnSetAll, False, False, 0)
+        vBoxOuter.pack_start(btnAlignBox, False, False, 0)
 
     def restoreColors(self):
         for page in self.pages:
@@ -95,10 +98,12 @@ class Page(Gtk.Box):
         self.pack_start(self.stack, True, True, 0)
 
         ###SET BUTTON
-        btn = Gtk.Button.new_with_label("Set" + product.name)
+        btnAlignBox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        btn = Gtk.Button.new_with_label("Apply to " + product.name)
         btn.connect("clicked", self.on_button_clicked)
 
-        self.pack_start(btn, True, True, 0)
+        btnAlignBox.pack_end(btn, False, False, 0)
+        self.pack_start(btnAlignBox, True, True, 0)
 
     def restoreColors(self):
         def btnSetHex(btn, color):
