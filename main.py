@@ -11,29 +11,112 @@ from gi.repository import Gdk
 NAME = "G213 Colors"
 
 class Window(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title=NAME)
+        self.set_border_width(10)
+
+        vBoxOuter = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.add(vBoxOuter)
+
+        notebook = Gtk.Notebook()
+        vBoxOuter.add(notebook)
+
+        self.pages = []
+        for p in G213Colors.supportedProducts:
+            page = Page(p)
+            notebook.append_page(page, Gtk.Label(label=p.name))
+            self.pages.append(page)
+        
+        ###SET ALL BUTTON
+        btnSetAll = Gtk.Button.new_with_label("Set all")
+        #btnSetAll.connect("clicked", self.on_button_clicked, "all")
+        vBoxOuter.pack_start(btnSetAll, True, True, 0)
+
+    def restoreColors(self):
+        for page in self.pages:
+            page.restoreColors();
+
+class Page(Gtk.Box):
+    def __init__(self, product):
+        Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.set_border_width(10)
+
+        self.product = product
+
+        ###STACK
+        self.stack = Gtk.Stack()
+        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
+        self.stack.set_transition_duration(1000)
+
+        ###STATIC TAB
+        vBoxStatic = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.staticColorButton = Gtk.ColorButton()
+        vBoxStatic.add(self.staticColorButton)
+
+        self.stack.add_titled(vBoxStatic, "static", "Static")
+
+        ###CYCLE TAB
+        vBoxCycle = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.adjCycle = Gtk.Adjustment(value=5000, lower=500, upper=65535, step_increment=100)
+        self.sbCycle = Gtk.SpinButton()
+        self.sbCycle.set_adjustment(self.adjCycle)
+        vBoxCycle.add(self.sbCycle)
+        self.stack.add_titled(vBoxCycle, "cycle", "Cycle")
+
+        ###BREATHE TAB
+
+        vBoxBreathe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        self.breatheColorButton = Gtk.ColorButton()
+        vBoxBreathe.add(self.breatheColorButton)
+        self.adjBCycle = Gtk.Adjustment(value=5000, lower=500, upper=65535, step_increment=100)
+        self.sbBCycle = Gtk.SpinButton()
+        self.sbBCycle.set_adjustment(self.adjBCycle)
+        vBoxBreathe.add(self.sbBCycle)
+        self.stack.add_titled(vBoxBreathe, "breathe", "Breathe")
+
+        ###SEGMENTS TAB
+        hBoxSegments = Gtk.Box(spacing=5)
+        self.segmentColorBtns = [Gtk.ColorButton() for _ in range(5)]
+        for btn in self.segmentColorBtns:
+            hBoxSegments.pack_start(btn, True, True, 0)
+        self.stack.add_titled(hBoxSegments, "segments", "Segments")
+
+        ###STACK
+        self.stack_switcher = Gtk.StackSwitcher()
+        self.stack_switcher.set_stack(self.stack)
+        self.pack_start(self.stack_switcher, True, True, 0)
+        self.pack_start(self.stack, True, True, 0)
+
+        ###SET BUTTON
+        btn = Gtk.Button.new_with_label("Set" + product.name)
+        btn.connect("clicked", self.on_button_clicked, product.name)
+
+        self.pack_start(btn, True, True, 0)
+
     def restoreColors(self):
         def btnSetHex(btn, color):
             rgba = Gdk.RGBA()
             rgba.parse("#" + color) # GDK wants HTML Style, leading '#'
             btn.set_rgba(rgba)
-
-        config = G213Colors.Configuration.restoreAny()
-
-        if config is not None:
-            if len(config.colors) > 0:
-                btnSetHex(self.staticColorButton, config.colors[0])
-                btnSetHex(self.breatheColorButton, config.colors[0])
-                
-            self.sbCycle.set_value(float(config.speed))
-            self.sbBCycle.set_value(float(config.speed))
         
-            for b, c in zip(self.segmentColorBtns, config.colors):
-                btnSetHex(b, c)
+        try: config = G213Colors.Configuration.restore(self.product)
+        except FileNotFoundError: return
+        except ValueError: return
+        
+        if len(config.colors) > 0:
+            btnSetHex(self.staticColorButton, config.colors[0])
+            btnSetHex(self.breatheColorButton, config.colors[0])
             
-            child = self.stack.get_child_by_name(config.mode)
-            if child is not None:
-                child.show()
-                self.stack.set_visible_child(child)
+        self.sbCycle.set_value(float(config.speed))
+        self.sbBCycle.set_value(float(config.speed))
+    
+        for b, c in zip(self.segmentColorBtns, config.colors):
+            btnSetHex(b, c)
+        
+        child = self.stack.get_child_by_name(config.mode)
+        if child is not None:
+            child.show()
+            self.stack.set_visible_child(child)
 
     def makeCurrentCommand(self, product_name):
         """
@@ -81,72 +164,6 @@ class Window(Gtk.Window):
     def on_button_clicked(self, button, product_name):
         command = self.makeCurrentCommand(product_name)
         subprocess.run(command) # fails if device missing, but we ignore!
-
-    def __init__(self):
-
-        Gtk.Window.__init__(self, title=NAME)
-        self.set_border_width(10)
-
-        vBoxMain = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        self.add(vBoxMain)
-
-        ###STACK
-        self.stack = Gtk.Stack()
-        self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
-        self.stack.set_transition_duration(1000)
-
-        ###STATIC TAB
-        vBoxStatic = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        self.staticColorButton = Gtk.ColorButton()
-        vBoxStatic.add(self.staticColorButton)
-
-        self.stack.add_titled(vBoxStatic, "static", "Static")
-
-        ###CYCLE TAB
-        vBoxCycle = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        self.adjCycle = Gtk.Adjustment(value=5000, lower=500, upper=65535, step_increment=100)
-        self.sbCycle = Gtk.SpinButton()
-        self.sbCycle.set_adjustment(self.adjCycle)
-        vBoxCycle.add(self.sbCycle)
-        self.stack.add_titled(vBoxCycle, "cycle", "Cycle")
-
-        ###BREATHE TAB
-
-        vBoxBreathe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        self.breatheColorButton = Gtk.ColorButton()
-        vBoxBreathe.add(self.breatheColorButton)
-        self.adjBCycle = Gtk.Adjustment(value=5000, lower=500, upper=65535, step_increment=100)
-        self.sbBCycle = Gtk.SpinButton()
-        self.sbBCycle.set_adjustment(self.adjBCycle)
-        vBoxBreathe.add(self.sbBCycle)
-        self.stack.add_titled(vBoxBreathe, "breathe", "Breathe")
-
-        ###SEGMENTS TAB
-        hBoxSegments = Gtk.Box(spacing=5)
-        self.segmentColorBtns = [Gtk.ColorButton() for _ in range(5)]
-        for btn in self.segmentColorBtns:
-            hBoxSegments.pack_start(btn, True, True, 0)
-        self.stack.add_titled(hBoxSegments, "segments", "Segments")
-
-        ###STACK
-        self.stack_switcher = Gtk.StackSwitcher()
-        self.stack_switcher.set_stack(self.stack)
-        vBoxMain.pack_start(self.stack_switcher, True, True, 0)
-        vBoxMain.pack_start(self.stack, True, True, 0)
-
-        ###SET BUTTONS
-        hBoxSetButtons = Gtk.Box(spacing=5)
-        self.setColorBtns = []
-        for p in G213Colors.supportedProducts:
-            btn = Gtk.Button.new_with_label("Set" + p.name)
-            hBoxSetButtons.pack_start(btn, True, True, 0)
-            btn.connect("clicked", self.on_button_clicked, p.name)
-        vBoxMain.pack_start(hBoxSetButtons, True, True, 0)
-
-        ###SET ALL BUTTON
-        btnSetAll = Gtk.Button.new_with_label("Set all")
-        btnSetAll.connect("clicked", self.on_button_clicked, "all")
-        vBoxMain.pack_start(btnSetAll, True, True, 0)
 
 win = Window()
 win.connect("delete-event", Gtk.main_quit)
