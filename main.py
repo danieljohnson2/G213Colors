@@ -29,12 +29,16 @@ class Window(Gtk.Window):
         
         ###SET ALL BUTTON
         btnSetAll = Gtk.Button.new_with_label("Set all")
-        #btnSetAll.connect("clicked", self.on_button_clicked, "all")
+        btnSetAll.connect("clicked", self.on_button_clicked)
         vBoxOuter.pack_start(btnSetAll, True, True, 0)
 
     def restoreColors(self):
         for page in self.pages:
             page.restoreColors();
+
+    def on_button_clicked(self, button):
+        for page in self.pages:
+            page.apply()
 
 class Page(Gtk.Box):
     def __init__(self, product):
@@ -89,7 +93,7 @@ class Page(Gtk.Box):
 
         ###SET BUTTON
         btn = Gtk.Button.new_with_label("Set" + product.name)
-        btn.connect("clicked", self.on_button_clicked, product.name)
+        btn.connect("clicked", self.on_button_clicked)
 
         self.pack_start(btn, True, True, 0)
 
@@ -118,10 +122,10 @@ class Page(Gtk.Box):
             child.show()
             self.stack.set_visible_child(child)
 
-    def makeCurrentCommand(self, product_name):
+    def makeCommand(self):
         """
         Generates the command for whatever the state of the UI is; we
-        generate the commmands for the indicated product_name.
+        generate the commmands for the page's product.
         """
         def makeStaticArgs():
             colorHex = btnGetHex(self.staticColorButton)
@@ -158,12 +162,14 @@ class Page(Gtk.Box):
         
         mode = self.stack.get_visible_child_name()
         args = makers[mode]()
-        return ["pkexec", G213Colors.__file__, product_name, mode, "--save-configuration"] + args
+        return ["pkexec", G213Colors.__file__, self.product.name, mode, "--save-configuration"] + args
 
-
-    def on_button_clicked(self, button, product_name):
-        command = self.makeCurrentCommand(product_name)
+    def apply(self):
+        command = self.makeCommand()
         subprocess.run(command) # fails if device missing, but we ignore!
+
+    def on_button_clicked(self, button):
+        self.apply()
 
 win = Window()
 win.connect("delete-event", Gtk.main_quit)
