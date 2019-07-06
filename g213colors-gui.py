@@ -7,6 +7,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import GLib
 
 NAME = "G213 Colors"
 
@@ -14,7 +15,9 @@ class Window(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title=NAME)
         self.set_border_width(10)
-
+        self.set_icon_name("g213colors")
+        self.set_wmclass(NAME, NAME) # deprecated, but what else works?
+        
         vBoxOuter = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
         self.add(vBoxOuter)
 
@@ -47,7 +50,7 @@ class ProductPage(Gtk.Box):
     def __init__(self, product):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=5)
         self.set_border_width(10)
-
+        
         self.product = product
 
         ###STACK
