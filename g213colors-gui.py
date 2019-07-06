@@ -16,6 +16,7 @@ class Window(Gtk.Window):
         Gtk.Window.__init__(self, title=NAME)
         self.set_icon_name("g213colors")
         self.set_wmclass(NAME, NAME) # deprecated, but what else works?
+        self.set_resizable(False)
         
         vBoxOuter = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(vBoxOuter)
