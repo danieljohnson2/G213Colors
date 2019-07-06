@@ -104,7 +104,7 @@ class Window(Gtk.Window):
 
         ###CYCLE TAB
         vBoxCycle = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-        self.adjCycle = Gtk.Adjustment(5000, 500, 65535, 100, 100, 0)
+        self.adjCycle = Gtk.Adjustment(value=5000, lower=500, upper=65535, step_increment=100)
         self.sbCycle = Gtk.SpinButton()
         self.sbCycle.set_adjustment(self.adjCycle)
         vBoxCycle.add(self.sbCycle)
@@ -115,7 +115,7 @@ class Window(Gtk.Window):
         vBoxBreathe = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
         self.breatheColorButton = Gtk.ColorButton()
         vBoxBreathe.add(self.breatheColorButton)
-        self.adjBCycle = Gtk.Adjustment(5000, 500, 65535, 100, 100, 0)
+        self.adjBCycle = Gtk.Adjustment(value=5000, lower=500, upper=65535, step_increment=100)
         self.sbBCycle = Gtk.SpinButton()
         self.sbBCycle.set_adjustment(self.adjBCycle)
         vBoxBreathe.add(self.sbBCycle)
